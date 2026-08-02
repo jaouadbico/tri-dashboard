@@ -109,6 +109,8 @@
     </div>
   </div>
   <div class="race-set">
+    <span id="syncStatus" class="mono">checking sync\u2026</span>
+    <span style="opacity:0.4;">|</span>
     RACE DATE
     <input type="date" id="raceDateInput">
     <button class="ghost" id="saveRaceDate">Set</button>
@@ -154,7 +156,7 @@
         <label class="ghost" style="cursor:pointer;display:inline-flex;align-items:center;">Import JSON
           <input type="file" id="importFile" accept="application/json" style="display:none;">
         </label>
-        <button class="ghost" id="resetBtn">Reset to Seed Data</button>
+        <button class="ghost" id="resetBtn">Clear Manual Entries</button>
       </div>
 
       <span class="mphase" style="margin-top:18px;">Add Workout</span>
@@ -254,17 +256,22 @@ const SEED_WORKOUTS = [
   {date:'2026-03-26', sport:'Cross', duration:66, distance:null, notes:'Night soccer'},
 ];
 
-/* ---------------- STATE ---------------- */
-const STORE_KEY = 'atlas703_workouts_v1';
+/* ---------------- STATE ----------------
+   Two layers of workout data:
+   - synced: pulled from workouts.json (Strava sync file), read-only, refreshed by re-uploading that one file
+   - manual: entries you add yourself in the browser, stored in localStorage
+   The two are merged for display. Deleting only affects manual entries. */
+const MANUAL_KEY = 'atlas703_manual_v1';
 const RACE_KEY = 'atlas703_racedate_v1';
 const MS_KEY = 'atlas703_milestones_v1';
+const SYNC_STATUS_KEY = 'atlas703_sync_status_v1';
 
-function loadWorkouts(){
-  const raw = localStorage.getItem(STORE_KEY);
-  if(raw){ try { return JSON.parse(raw); } catch(e){ return SEED_WORKOUTS.slice(); } }
-  return SEED_WORKOUTS.slice();
+function loadManual(){
+  const raw = localStorage.getItem(MANUAL_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return []; } }
+  return [];
 }
-function saveWorkouts(w){ localStorage.setItem(STORE_KEY, JSON.stringify(w)); }
+function saveManual(w){ localStorage.setItem(MANUAL_KEY, JSON.stringify(w)); }
 function loadRaceDate(){ return localStorage.getItem(RACE_KEY) || DEFAULT_RACE_DATE; }
 function saveRaceDate(d){ localStorage.setItem(RACE_KEY, d); }
 function loadMilestones(){
@@ -274,9 +281,32 @@ function loadMilestones(){
 }
 function saveMilestones(m){ localStorage.setItem(MS_KEY, JSON.stringify(m)); }
 
-let workouts = loadWorkouts();
+let syncedWorkouts = [];   // from workouts.json
+let manualWorkouts = loadManual();
+let workouts = [];         // combined view, rebuilt by rebuildWorkouts()
 let raceDate = loadRaceDate();
 let milestoneState = loadMilestones();
+let syncInfo = {ok:false, checkedAt:null};
+
+function rebuildWorkouts(){
+  workouts = syncedWorkouts.map(w=>({...w, source:'strava'}))
+    .concat(manualWorkouts.map(w=>({...w, source:'manual'})));
+}
+
+async function loadSyncedWorkouts(){
+  try{
+    const res = await fetch('workouts.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no workouts.json');
+    const data = await res.json();
+    syncedWorkouts = data.workouts || [];
+    syncInfo = {ok:true, checkedAt: new Date().toISOString(), syncedAt: data.syncedAt || null};
+  }catch(e){
+    // No workouts.json found (e.g. running locally via file://, or not uploaded yet) — fall back to seed data
+    syncedWorkouts = SEED_WORKOUTS.slice();
+    syncInfo = {ok:false, checkedAt: new Date().toISOString()};
+  }
+  rebuildWorkouts();
+}
 
 /* ---------------- PHASE MATH ---------------- */
 function computePhases(raceDateStr){
@@ -535,6 +565,7 @@ function renderLogTable(){
   body.innerHTML = sorted.map((w,idx)=>{
     const realIdx = workouts.indexOf(w);
     const pace = (w.sport==='Run' && w.distance) ? (w.duration/w.distance).toFixed(2)+' /mi' : '\u2014';
+    const delBtn = w.source==='manual' ? `<button class="del-btn" onclick="deleteWorkout(${realIdx})">&times;</button>` : `<span class="mono" style="color:var(--muted);font-size:11px;" title="From workouts.json">\u2713</span>`;
     return `<tr>
       <td class="mono">${w.date}</td>
       <td><span class="tag ${tagClass(w.sport)}">${w.sport}</span></td>
@@ -542,13 +573,17 @@ function renderLogTable(){
       <td class="mono">${w.distance ? w.distance+' mi' : '\u2014'}</td>
       <td class="mono">${pace}</td>
       <td>${w.notes||''}</td>
-      <td><button class="del-btn" onclick="deleteWorkout(${realIdx})">&times;</button></td>
+      <td>${delBtn}</td>
     </tr>`;
   }).join('');
 }
 function deleteWorkout(idx){
-  workouts.splice(idx,1);
-  saveWorkouts(workouts);
+  const w = workouts[idx];
+  if(w.source !== 'manual'){ alert('This entry came from workouts.json (Strava sync). Delete it by re-uploading an updated workouts.json instead.'); return; }
+  const manualIdx = manualWorkouts.findIndex(m => m.date===w.date && m.sport===w.sport && m.duration===w.duration && m.notes===w.notes);
+  if(manualIdx > -1) manualWorkouts.splice(manualIdx,1);
+  saveManual(manualWorkouts);
+  rebuildWorkouts();
   renderAll();
 }
 
@@ -560,8 +595,9 @@ document.getElementById('addWorkoutBtn').addEventListener('click', ()=>{
   const distance = parseFloat(document.getElementById('wDistance').value) || null;
   const notes = document.getElementById('wNotes').value;
   if(!date){ alert('Pick a date first.'); return; }
-  workouts.push({date, sport, duration, distance, notes});
-  saveWorkouts(workouts);
+  manualWorkouts.push({date, sport, duration, distance, notes});
+  saveManual(manualWorkouts);
+  rebuildWorkouts();
   document.getElementById('wDuration').value='';
   document.getElementById('wDistance').value='';
   document.getElementById('wNotes').value='';
@@ -569,7 +605,7 @@ document.getElementById('addWorkoutBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const payload = {workouts, raceDate, milestones: milestoneState, exportedAt: new Date().toISOString()};
+  const payload = {manualWorkouts, raceDate, milestones: milestoneState, exportedAt: new Date().toISOString()};
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -584,10 +620,12 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   reader.onload = (ev)=>{
     try{
       const data = JSON.parse(ev.target.result);
-      if(data.workouts) workouts = data.workouts;
+      if(data.manualWorkouts) manualWorkouts = data.manualWorkouts;
+      else if(data.workouts) manualWorkouts = data.workouts.filter(w=>w.source!=='strava');
       if(data.raceDate) raceDate = data.raceDate;
       if(data.milestones) milestoneState = data.milestones;
-      saveWorkouts(workouts); saveRaceDate(raceDate); saveMilestones(milestoneState);
+      saveManual(manualWorkouts); saveRaceDate(raceDate); saveMilestones(milestoneState);
+      rebuildWorkouts();
       renderAll();
       alert('Import complete.');
     }catch(err){ alert('Could not read that file: '+err.message); }
@@ -596,9 +634,10 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(!confirm('Reset workout log to the original Strava-seeded data? Manual entries will be lost.')) return;
-  workouts = SEED_WORKOUTS.slice();
-  saveWorkouts(workouts);
+  if(!confirm('Clear all manually-added workouts? Strava-synced data (from workouts.json) is not affected.')) return;
+  manualWorkouts = [];
+  saveManual(manualWorkouts);
+  rebuildWorkouts();
   renderAll();
 });
 
@@ -611,7 +650,17 @@ document.getElementById('saveRaceDate').addEventListener('click', ()=>{
 });
 
 /* ---------------- INIT ---------------- */
+function renderSyncStatus(){
+  const el = document.getElementById('syncStatus');
+  if(syncInfo.ok){
+    const when = syncInfo.syncedAt ? new Date(syncInfo.syncedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'unknown';
+    el.innerHTML = `<span style="color:var(--green);">\u25CF</span> synced ${when}`;
+  } else {
+    el.innerHTML = `<span style="color:var(--amber);">\u25CF</span> no workouts.json \u2014 using seed data`;
+  }
+}
 function renderAll(){
+  renderSyncStatus();
   renderGauges();
   renderTimeline();
   renderMilestones();
@@ -620,9 +669,13 @@ function renderAll(){
   renderDistanceChart();
   renderLogTable();
 }
-document.getElementById('raceDateInput').value = raceDate;
-document.getElementById('wDate').value = new Date().toISOString().slice(0,10);
-renderAll();
+async function init(){
+  document.getElementById('raceDateInput').value = raceDate;
+  document.getElementById('wDate').value = new Date().toISOString().slice(0,10);
+  await loadSyncedWorkouts();
+  renderAll();
+}
+init();
 </script>
 </body>
 </html>
