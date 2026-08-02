@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas 70.3 — Training Instrumentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#10151b; --panel:#1a222b; --panel-alt:#212b35; --line:#2e3944;
+    --text:#e7ecef; --muted:#90a0ac;
+    --cyan:#4fd8cb; --amber:#f2a93e; --blue:#5b8def; --slate:#8b97a3; --red:#e2543d; --green:#57c785;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
+       background-image:radial-gradient(circle at 20% 0%, rgba(79,216,203,0.05), transparent 40%),
+                         radial-gradient(circle at 80% 10%, rgba(242,169,62,0.04), transparent 35%);}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.02em;}
+  a{color:var(--cyan);}
+
+  header{padding:22px 28px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand .mark{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+  .brand h1{font-size:22px;margin:0;text-transform:uppercase;}
+  .brand .sub{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.12em;}
+  .race-set{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .race-set input{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:5px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+
+  main{max-width:1280px;margin:0 auto;padding:24px 28px 60px;}
+
+  /* Gauge cluster */
+  .cluster{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:22px;}
+  .gauge-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;align-items:center;}
+  .gauge-card .glabel{font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);margin-top:6px;}
+  .gauge-card .gvalue{font-size:26px;margin-top:-46px;}
+  .gauge-card .gsub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .needle{transform-origin:100px 100px;transition:transform 0.6s cubic-bezier(.4,1.4,.4,1);}
+
+  /* Panels */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
+  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:15px;letter-spacing:0.08em;margin:0 0 14px;color:var(--text);display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:3px;height:14px;background:var(--cyan);display:inline-block;}
+  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+  .grid-charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:900px){.grid-2,.grid-charts{grid-template-columns:1fr;}}
+
+  /* Phase timeline */
+  .timeline{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
+  .phase{flex:1;padding:12px 10px;position:relative;background:var(--panel-alt);border-right:1px solid var(--line);}
+  .phase:last-child{border-right:none;}
+  .phase .pname{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;}
+  .phase .pdate{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .phase.active{background:linear-gradient(180deg, rgba(79,216,203,0.18), rgba(79,216,203,0.04));}
+  .phase.active .pname{color:var(--cyan);}
+  .phase.done{opacity:0.45;}
+  .phase-bar{height:3px;background:var(--line);margin-top:8px;border-radius:2px;overflow:hidden;}
+  .phase-bar-fill{height:100%;background:var(--cyan);}
+
+  /* Milestones */
+  .milestone{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .milestone:last-child{border-bottom:none;}
+  .milestone input{margin-top:3px;accent-color:var(--cyan);}
+  .milestone.checked label{color:var(--muted);text-decoration:line-through;}
+  .mphase{font-size:10px;text-transform:uppercase;color:var(--amber);letter-spacing:0.08em;display:block;margin-bottom:6px;margin-top:10px;}
+
+  /* Log table */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--muted);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:0.08em;padding:6px 8px;border-bottom:1px solid var(--line);}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);}
+  tr:hover td{background:var(--panel-alt);}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;}
+  .tag-run{background:rgba(79,216,203,0.15);color:var(--cyan);}
+  .tag-bike{background:rgba(242,169,62,0.15);color:var(--amber);}
+  .tag-swim{background:rgba(91,141,239,0.15);color:var(--blue);}
+  .tag-strength{background:rgba(139,151,163,0.15);color:var(--slate);}
+  .tag-cross{background:rgba(226,84,61,0.15);color:var(--red);}
+  .tag-recovery{background:rgba(255,255,255,0.06);color:var(--muted);}
+  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;}
+  .del-btn:hover{color:var(--red);}
+
+  /* Form */
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .form-row.full{grid-template-columns:1fr;}
+  label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
+  input,select{width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;}
+  input:focus,select:focus{outline:1px solid var(--cyan);}
+  button.primary{background:var(--cyan);color:#0a1013;border:none;padding:9px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;letter-spacing:0.02em;}
+  button.primary:hover{filter:brightness(1.1);}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;}
+  button.ghost:hover{color:var(--text);border-color:var(--muted);}
+  .actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+  .table-wrap{max-height:340px;overflow-y:auto;}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-top:1px solid var(--line);}
+  .empty{color:var(--muted);font-size:12px;padding:14px 0;text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>Atlas 70.3 Instrumentation</h1>
+      <div class="sub">Half Ironman Build &mdash; Aug 2026 → Race Day</div>
+    </div>
+  </div>
+  <div class="race-set">
+    RACE DATE
+    <input type="date" id="raceDateInput">
+    <button class="ghost" id="saveRaceDate">Set</button>
+  </div>
+</header>
+
+<main>
+
+  <div class="cluster" id="gaugeCluster"></div>
+
+  <div class="panel">
+    <h2>Phase Timeline</h2>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <div class="grid-charts">
+    <div class="panel">
+      <h2>Weekly Training Hours by Discipline</h2>
+      <canvas id="volumeChart" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Run Pace Trend (min/mi, lower = faster)</h2>
+      <canvas id="paceChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Weekly Distance by Sport (mi)</h2>
+    <canvas id="distanceChart" height="110"></canvas>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h2>Workout Log</h2>
+      <div class="table-wrap">
+        <table id="logTable">
+          <thead><tr><th>Date</th><th>Sport</th><th>Duration</th><th>Distance</th><th>Pace</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="ghost" id="exportBtn">Export JSON</button>
+        <label class="ghost" style="cursor:pointer;display:inline-flex;align-items:center;">Import JSON
+          <input type="file" id="importFile" accept="application/json" style="display:none;">
+        </label>
+        <button class="ghost" id="resetBtn">Reset to Seed Data</button>
+      </div>
+
+      <span class="mphase" style="margin-top:18px;">Add Workout</span>
+      <div class="form-row">
+        <div><label>Date</label><input type="date" id="wDate"></div>
+        <div><label>Sport</label>
+          <select id="wSport">
+            <option value="Run">Run</option>
+            <option value="Bike">Bike</option>
+            <option value="Swim">Swim</option>
+            <option value="Strength">Strength</option>
+            <option value="Cross">Cross-training (soccer, etc.)</option>
+            <option value="Recovery">Recovery / Walk</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>Duration (min)</label><input type="number" id="wDuration" min="0" placeholder="45"></div>
+        <div><label>Distance (mi, optional)</label><input type="number" step="0.01" id="wDistance" placeholder="3.1"></div>
+      </div>
+      <div class="form-row full">
+        <div><label>Notes</label><input type="text" id="wNotes" placeholder="Easy aerobic, felt good"></div>
+      </div>
+      <button class="primary" id="addWorkoutBtn">Log Workout</button>
+    </div>
+
+    <div class="panel">
+      <h2>Milestones</h2>
+      <div id="milestoneList"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Runs fully offline &mdash; all data stored in this browser (localStorage). Export JSON regularly to back up or move between devices.</footer>
+
+<script>
+/* ---------------- PLAN DEFINITION ---------------- */
+const PHASE_DEFS = [
+  {key:'foundation', name:'Foundation', weeks:12, goal:'Build habit, swim technique, ease into bike & run volume'},
+  {key:'base', name:'Base Build', weeks:10, goal:'Extend duration, first bricks, real aerobic engine'},
+  {key:'build1', name:'Build 1', weeks:9, goal:'Race-pace work, swim to full distance'},
+  {key:'build2', name:'Build 2 / Peak', weeks:10, goal:'Longest sessions, race-specific bricks'},
+  {key:'taper', name:'Taper', weeks:3, goal:'Arrive fresh, not fit-and-fried'},
+];
+const MILESTONES = [
+  {phase:'Foundation', text:'Swim 500m continuous'},
+  {phase:'Foundation', text:'Bike 90 min easy'},
+  {phase:'Foundation', text:'Run 45 min continuous'},
+  {phase:'Base Build', text:'Swim 1000m'},
+  {phase:'Base Build', text:'Bike 2 hrs'},
+  {phase:'Base Build', text:'Run 60 min'},
+  {phase:'Base Build', text:'Comfortable with basic bricks'},
+  {phase:'Build 1', text:'Swim 1900m continuous (full race distance)'},
+  {phase:'Build 1', text:'Bike 3 hrs'},
+  {phase:'Build 1', text:'Run 75 min'},
+  {phase:'Build 2 / Peak', text:'Bike 3.5\u20134 hrs (56mi race pace practice)'},
+  {phase:'Build 2 / Peak', text:'Run 90 min'},
+  {phase:'Build 2 / Peak', text:'Completed a key long brick (bike + run off bike)'},
+  {phase:'Build 2 / Peak', text:'Tune-up race completed'},
+  {phase:'Taper', text:'Final long brick done 10\u201312 days out'},
+  {phase:'Taper', text:'Gear checked, race logistics confirmed'},
+];
+const DEFAULT_RACE_DATE = '2027-06-13';
+
+/* ---------------- SEED DATA (from Strava, pulled Aug 2 2026) ---------------- */
+const SEED_WORKOUTS = [
+  {date:'2026-07-30', sport:'Strength', duration:21, distance:null, notes:'Evening weight training'},
+  {date:'2026-07-28', sport:'Recovery', duration:22, distance:1.05, notes:'Afternoon walk'},
+  {date:'2026-07-28', sport:'Run', duration:23, distance:2.40, notes:'Afternoon run'},
+  {date:'2026-07-26', sport:'Cross', duration:121, distance:null, notes:'Morning soccer'},
+  {date:'2026-07-24', sport:'Strength', duration:20, distance:null, notes:'Night weight training'},
+  {date:'2026-07-22', sport:'Strength', duration:11, distance:null, notes:'Night weight training'},
+  {date:'2026-07-21', sport:'Recovery', duration:26, distance:null, notes:'Morning walk'},
+  {date:'2026-07-21', sport:'Run', duration:20, distance:null, notes:'Morning run'},
+  {date:'2026-07-16', sport:'Strength', duration:16, distance:null, notes:'Night weight training'},
+  {date:'2026-07-05', sport:'Strength', duration:18, distance:null, notes:'Night weight training'},
+  {date:'2026-07-02', sport:'Strength', duration:44, distance:null, notes:'Evening weight training'},
+  {date:'2026-06-26', sport:'Cross', duration:110, distance:null, notes:'Evening soccer'},
+  {date:'2026-06-26', sport:'Strength', duration:26, distance:null, notes:'Morning weight training'},
+  {date:'2026-06-25', sport:'Strength', duration:46, distance:null, notes:'Night weight training'},
+  {date:'2026-06-19', sport:'Strength', duration:66, distance:null, notes:'Night weight training'},
+  {date:'2026-06-10', sport:'Strength', duration:52, distance:null, notes:'Night weight training'},
+  {date:'2026-06-09', sport:'Cross', duration:114, distance:null, notes:'Evening soccer'},
+  {date:'2026-06-07', sport:'Cross', duration:116, distance:null, notes:'Morning soccer'},
+  {date:'2026-06-05', sport:'Strength', duration:19, distance:null, notes:'Afternoon weight training'},
+  {date:'2026-06-01', sport:'Run', duration:24, distance:2.87, notes:'Night run'},
+  {date:'2026-05-31', sport:'Strength', duration:38, distance:null, notes:'Night weight training'},
+  {date:'2026-05-30', sport:'Run', duration:29, distance:null, notes:'Evening run'},
+  {date:'2026-05-26', sport:'Run', duration:116, distance:null, notes:'Evening run'},
+  {date:'2026-05-25', sport:'Cross', duration:96, distance:null, notes:'Morning soccer'},
+  {date:'2026-05-20', sport:'Run', duration:25, distance:null, notes:'Afternoon run'},
+  {date:'2026-05-17', sport:'Cross', duration:123, distance:null, notes:'Morning soccer'},
+  {date:'2026-05-03', sport:'Cross', duration:138, distance:null, notes:'Morning soccer'},
+  {date:'2026-04-17', sport:'Cross', duration:55, distance:null, notes:'Evening soccer'},
+  {date:'2026-03-31', sport:'Cross', duration:103, distance:null, notes:'Evening soccer'},
+  {date:'2026-03-26', sport:'Cross', duration:66, distance:null, notes:'Night soccer'},
+];
+
+/* ---------------- STATE ---------------- */
+const STORE_KEY = 'atlas703_workouts_v1';
+const RACE_KEY = 'atlas703_racedate_v1';
+const MS_KEY = 'atlas703_milestones_v1';
+
+function loadWorkouts(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return SEED_WORKOUTS.slice(); } }
+  return SEED_WORKOUTS.slice();
+}
+function saveWorkouts(w){ localStorage.setItem(STORE_KEY, JSON.stringify(w)); }
+function loadRaceDate(){ return localStorage.getItem(RACE_KEY) || DEFAULT_RACE_DATE; }
+function saveRaceDate(d){ localStorage.setItem(RACE_KEY, d); }
+function loadMilestones(){
+  const raw = localStorage.getItem(MS_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return {}; } }
+  return {};
+}
+function saveMilestones(m){ localStorage.setItem(MS_KEY, JSON.stringify(m)); }
+
+let workouts = loadWorkouts();
+let raceDate = loadRaceDate();
+let milestoneState = loadMilestones();
+
+/* ---------------- PHASE MATH ---------------- */
+function computePhases(raceDateStr){
+  const totalWeeks = PHASE_DEFS.reduce((s,p)=>s+p.weeks,0);
+  const race = new Date(raceDateStr+'T00:00:00');
+  const planStart = new Date(race.getTime() - totalWeeks*7*86400000);
+  let cursor = new Date(planStart);
+  return PHASE_DEFS.map(p=>{
+    const start = new Date(cursor);
+    const end = new Date(cursor.getTime() + p.weeks*7*86400000 - 86400000);
+    cursor = new Date(cursor.getTime() + p.weeks*7*86400000);
+    return {...p, start, end};
+  });
+}
+function fmtDate(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+
+/* ---------------- GAUGE RENDERING (semicircle SVG) ---------------- */
+function gaugeSVG(value, max, zones, needleColor){
+  // value/max -> angle from -90deg (left) to +90deg (right) over 180deg arc
+  const pct = Math.max(0, Math.min(1, value/max));
+  const angle = -90 + pct*180;
+  const cx=100, cy=100, r=78;
+  function arcPath(startDeg, endDeg){
+    const toXY = deg => {
+      const rad = (deg-90) * Math.PI/180;
+      return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)];
+    };
+    const [x1,y1] = toXY(startDeg);
+    const [x2,y2] = toXY(endDeg);
+    const largeArc = (endDeg-startDeg) > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
+  }
+  let zoneArcs = '';
+  if(zones){
+    zones.forEach(z=>{
+      const a1 = -90 + (z.from/max)*180;
+      const a2 = -90 + (z.to/max)*180;
+      zoneArcs += `<path d="${arcPath(a1+90,a2+90)}" stroke="${z.color}" stroke-width="6" fill="none" opacity="0.55" stroke-linecap="round"/>`;
+    });
+  } else {
+    zoneArcs = `<path d="${arcPath(0,180)}" stroke="var(--line)" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  }
+  // ticks
+  let ticks = '';
+  for(let i=0;i<=10;i++){
+    const deg = -90 + i*18;
+    const rad = deg*Math.PI/180;
+    const x1 = cx + (r+8)*Math.cos(rad), y1 = cy + (r+8)*Math.sin(rad);
+    const x2 = cx + (r+2)*Math.cos(rad), y2 = cy + (r+2)*Math.sin(rad);
+    ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1.5" opacity="0.6"/>`;
+  }
+  const needleRad = (angle)*Math.PI/180;
+  const nx = cx + (r-10)*Math.cos(needleRad), ny = cy + (r-10)*Math.sin(needleRad);
+  return `<svg width="200" height="118" viewBox="0 0 200 112">
+    ${zoneArcs}
+    ${ticks}
+    <line class="needle" x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${needleColor}" stroke-width="3" stroke-linecap="round" style="transform:rotate(0deg);"/>
+    <circle cx="${cx}" cy="${cy}" r="4.5" fill="${needleColor}"/>
+  </svg>`;
+}
+
+function renderGauges(){
+  const phases = computePhases(raceDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const race = new Date(raceDate+'T00:00:00');
+  const planStart = phases[0].start;
+  const totalDays = daysBetween(planStart, phases[phases.length-1].end);
+  const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(planStart, today)));
+  const planPct = totalDays>0 ? (elapsedDays/totalDays*100) : 0;
+  const daysToRace = daysBetween(today, race);
+
+  // weekly compliance: sessions logged in last 7 days vs target (assume 4/week target)
+  const weekAgo = new Date(today.getTime()-7*86400000);
+  const thisWeekCount = workouts.filter(w=>{
+    const d = new Date(w.date+'T00:00:00');
+    return d>=weekAgo && d<=today && w.sport!=='Recovery';
+  }).length;
+  const targetPerWeek = 4;
+  const compliancePct = Math.min(100, (thisWeekCount/targetPerWeek)*100);
+
+  const cluster = document.getElementById('gaugeCluster');
+  cluster.innerHTML = `
+    <div class="gauge-card">
+      ${gaugeSVG(Math.max(0,Math.min(600,daysToRace)), 600, null, 'var(--cyan)')}
+      <div class="gvalue mono">${daysToRace}</div>
+      <div class="glabel">Days to Race</div>
+      <div class="gsub">${fmtDate(race)}</div>
+    </div>
+    <div class="gauge-card">
+      ${gaugeSVG(planPct, 100, null, 'var(--amber)')}
+      <div class="gvalue mono">${planPct.toFixed(0)}%</div>
+      <div class="glabel">Plan Progress</div>
+      <div class="gsub">${phases.find(p=>today>=p.start&&today<=p.end)?.name || (today<planStart?'Not started':'Complete')}</div>
+    </div>
+    <div class="gauge-card">
+      ${gaugeSVG(compliancePct, 100, [{from:0,to:50,color:'var(--red)'},{from:50,to:85,color:'var(--amber)'},{from:85,to:100,color:'var(--green)'}], 'var(--text)')}
+      <div class="gvalue mono">${thisWeekCount}/${targetPerWeek}</div>
+      <div class="glabel">This Week's Sessions</div>
+      <div class="gsub">${compliancePct.toFixed(0)}% of target</div>
+    </div>
+  `;
+}
+
+/* ---------------- TIMELINE ---------------- */
+function renderTimeline(){
+  const phases = computePhases(raceDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const el = document.getElementById('timeline');
+  el.innerHTML = phases.map(p=>{
+    let cls = '';
+    let barPct = 0;
+    if(today > p.end) { cls='done'; barPct=100; }
+    else if(today >= p.start && today <= p.end){ cls='active'; barPct = (daysBetween(p.start,today)/daysBetween(p.start,p.end))*100; }
+    return `<div class="phase ${cls}">
+      <div class="pname">${p.name}</div>
+      <div class="pdate">${fmtDate(p.start)} \u2192 ${fmtDate(p.end)}</div>
+      <div class="phase-bar"><div class="phase-bar-fill" style="width:${barPct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- MILESTONES ---------------- */
+function renderMilestones(){
+  const el = document.getElementById('milestoneList');
+  let html = '';
+  let lastPhase = null;
+  MILESTONES.forEach((m,i)=>{
+    if(m.phase !== lastPhase){ html += `<span class="mphase">${m.phase}</span>`; lastPhase = m.phase; }
+    const checked = milestoneState[i] ? 'checked' : '';
+    html += `<div class="milestone ${checked?'checked':''}">
+      <input type="checkbox" id="ms${i}" ${checked} onchange="toggleMilestone(${i})">
+      <label for="ms${i}">${m.text}</label>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+function toggleMilestone(i){
+  milestoneState[i] = !milestoneState[i];
+  saveMilestones(milestoneState);
+  renderMilestones();
+}
+
+/* ---------------- CHARTS ---------------- */
+let volumeChart, paceChart, distanceChart;
+const SPORT_COLOR = {Run:'#4fd8cb', Bike:'#f2a93e', Swim:'#5b8def', Strength:'#8b97a3', Cross:'#e2543d'};
+
+function isoWeekLabel(d){
+  const date = new Date(d);
+  const jan1 = new Date(date.getFullYear(),0,1);
+  const week = Math.ceil((((date - jan1)/86400000) + jan1.getDay()+1)/7);
+  return `${date.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function buildWeeklyVolume(){
+  const buckets = {};
+  workouts.forEach(w=>{
+    if(w.sport==='Recovery') return;
+    const wk = isoWeekLabel(w.date);
+    buckets[wk] = buckets[wk] || {Run:0,Bike:0,Swim:0,Strength:0,Cross:0};
+    buckets[wk][w.sport] += (w.duration||0)/60;
+  });
+  const weeks = Object.keys(buckets).sort();
+  return {weeks, buckets};
+}
+
+function renderVolumeChart(){
+  const {weeks, buckets} = buildWeeklyVolume();
+  const sports = ['Run','Bike','Swim','Strength','Cross'];
+  const datasets = sports.map(s=>({
+    label:s, backgroundColor:SPORT_COLOR[s],
+    data: weeks.map(w=>+(buckets[w][s]||0).toFixed(2))
+  }));
+  if(volumeChart) volumeChart.destroy();
+  volumeChart = new Chart(document.getElementById('volumeChart'), {
+    type:'bar',
+    data:{labels:weeks, datasets},
+    options:{
+      responsive:true,
+      scales:{
+        x:{stacked:true, ticks:{color:'#90a0ac',font:{size:10}}, grid:{color:'#2e3944'}},
+        y:{stacked:true, ticks:{color:'#90a0ac'}, grid:{color:'#2e3944'}, title:{display:true,text:'hours',color:'#90a0ac'}}
+      },
+      plugins:{legend:{labels:{color:'#e7ecef',font:{size:11}}}}
+    }
+  });
+}
+
+function renderPaceChart(){
+  const runs = workouts.filter(w=>w.sport==='Run' && w.distance && w.duration)
+    .map(w=>({date:w.date, pace: w.duration / w.distance}))
+    .sort((a,b)=> new Date(a.date)-new Date(b.date));
+  if(paceChart) paceChart.destroy();
+  paceChart = new Chart(document.getElementById('paceChart'), {
+    type:'line',
+    data:{
+      labels: runs.map(r=>r.date),
+      datasets:[{
+        label:'Pace (min/mi)',
+        data: runs.map(r=>+r.pace.toFixed(2)),
+        borderColor:'#4fd8cb', backgroundColor:'rgba(79,216,203,0.15)',
+        tension:0.3, fill:true, pointRadius:4, pointBackgroundColor:'#4fd8cb'
+      }]
+    },
+    options:{
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#90a0ac',font:{size:10}}, grid:{color:'#2e3944'}},
+        y:{reverse:false, ticks:{color:'#90a0ac'}, grid:{color:'#2e3944'}, title:{display:true,text:'min/mi',color:'#90a0ac'}}
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
+  if(runs.length===0){
+    document.getElementById('paceChart').insertAdjacentHTML('afterend','');
+  }
+}
+
+function renderDistanceChart(){
+  const buckets = {};
+  workouts.forEach(w=>{
+    if(!w.distance || (w.sport!=='Run' && w.sport!=='Bike' && w.sport!=='Swim')) return;
+    const wk = isoWeekLabel(w.date);
+    buckets[wk] = buckets[wk] || {Run:0,Bike:0,Swim:0};
+    buckets[wk][w.sport] += w.distance;
+  });
+  const weeks = Object.keys(buckets).sort();
+  const sports = ['Run','Bike','Swim'];
+  const datasets = sports.map(s=>({
+    label:s, borderColor:SPORT_COLOR[s], backgroundColor:SPORT_COLOR[s],
+    data: weeks.map(w=>+(buckets[w][s]||0).toFixed(2)), tension:0.3, pointRadius:3
+  }));
+  if(distanceChart) distanceChart.destroy();
+  distanceChart = new Chart(document.getElementById('distanceChart'), {
+    type:'line',
+    data:{labels:weeks, datasets},
+    options:{
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#90a0ac',font:{size:10}}, grid:{color:'#2e3944'}},
+        y:{ticks:{color:'#90a0ac'}, grid:{color:'#2e3944'}, title:{display:true,text:'miles',color:'#90a0ac'}}
+      },
+      plugins:{legend:{labels:{color:'#e7ecef',font:{size:11}}}}
+    }
+  });
+}
+
+/* ---------------- LOG TABLE ---------------- */
+function tagClass(sport){
+  return {Run:'tag-run',Bike:'tag-bike',Swim:'tag-swim',Strength:'tag-strength',Cross:'tag-cross',Recovery:'tag-recovery'}[sport] || 'tag-recovery';
+}
+function renderLogTable(){
+  const body = document.getElementById('logBody');
+  const sorted = workouts.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(sorted.length===0){ body.innerHTML = `<tr><td colspan="7"><div class="empty">No workouts logged yet.</div></td></tr>`; return; }
+  body.innerHTML = sorted.map((w,idx)=>{
+    const realIdx = workouts.indexOf(w);
+    const pace = (w.sport==='Run' && w.distance) ? (w.duration/w.distance).toFixed(2)+' /mi' : '\u2014';
+    return `<tr>
+      <td class="mono">${w.date}</td>
+      <td><span class="tag ${tagClass(w.sport)}">${w.sport}</span></td>
+      <td class="mono">${w.duration ? w.duration+' min' : '\u2014'}</td>
+      <td class="mono">${w.distance ? w.distance+' mi' : '\u2014'}</td>
+      <td class="mono">${pace}</td>
+      <td>${w.notes||''}</td>
+      <td><button class="del-btn" onclick="deleteWorkout(${realIdx})">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+function deleteWorkout(idx){
+  workouts.splice(idx,1);
+  saveWorkouts(workouts);
+  renderAll();
+}
+
+/* ---------------- ADD WORKOUT / EXPORT / IMPORT ---------------- */
+document.getElementById('addWorkoutBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('wDate').value;
+  const sport = document.getElementById('wSport').value;
+  const duration = parseFloat(document.getElementById('wDuration').value) || null;
+  const distance = parseFloat(document.getElementById('wDistance').value) || null;
+  const notes = document.getElementById('wNotes').value;
+  if(!date){ alert('Pick a date first.'); return; }
+  workouts.push({date, sport, duration, distance, notes});
+  saveWorkouts(workouts);
+  document.getElementById('wDuration').value='';
+  document.getElementById('wDistance').value='';
+  document.getElementById('wNotes').value='';
+  renderAll();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const payload = {workouts, raceDate, milestones: milestoneState, exportedAt: new Date().toISOString()};
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'atlas703-dashboard-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(data.workouts) workouts = data.workouts;
+      if(data.raceDate) raceDate = data.raceDate;
+      if(data.milestones) milestoneState = data.milestones;
+      saveWorkouts(workouts); saveRaceDate(raceDate); saveMilestones(milestoneState);
+      renderAll();
+      alert('Import complete.');
+    }catch(err){ alert('Could not read that file: '+err.message); }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('Reset workout log to the original Strava-seeded data? Manual entries will be lost.')) return;
+  workouts = SEED_WORKOUTS.slice();
+  saveWorkouts(workouts);
+  renderAll();
+});
+
+document.getElementById('saveRaceDate').addEventListener('click', ()=>{
+  const val = document.getElementById('raceDateInput').value;
+  if(!val){ return; }
+  raceDate = val;
+  saveRaceDate(raceDate);
+  renderAll();
+});
+
+/* ---------------- INIT ---------------- */
+function renderAll(){
+  renderGauges();
+  renderTimeline();
+  renderMilestones();
+  renderVolumeChart();
+  renderPaceChart();
+  renderDistanceChart();
+  renderLogTable();
+}
+document.getElementById('raceDateInput').value = raceDate;
+document.getElementById('wDate').value = new Date().toISOString().slice(0,10);
+renderAll();
+</script>
+</body>
+</html>
