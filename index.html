@@ -9,15 +9,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#10151b; --panel:#1a222b; --panel-alt:#212b35; --line:#2e3944;
-    --text:#e7ecef; --muted:#90a0ac;
-    --cyan:#4fd8cb; --amber:#f2a93e; --blue:#5b8def; --slate:#8b97a3; --red:#e2543d; --green:#57c785;
+    --bg:#0b0f14; --panel:#151d27; --panel-alt:#1c2733; --line:#2c3a48;
+    --text:#f2f6f8; --muted:#9fb0bd;
+    --cyan:#22e8d4; --amber:#ffb624; --blue:#4d94ff; --slate:#a6b7c4; --red:#ff4d5e; --green:#2ee878;
+    --purple:#a78bfa; --purple-bright:#c4b5fd;
     --radius:10px;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
-       background-image:radial-gradient(circle at 20% 0%, rgba(79,216,203,0.05), transparent 40%),
-                         radial-gradient(circle at 80% 10%, rgba(242,169,62,0.04), transparent 35%);}
+       background-image:radial-gradient(circle at 15% 0%, rgba(34,232,212,0.09), transparent 42%),
+                         radial-gradient(circle at 85% 8%, rgba(255,182,36,0.07), transparent 38%),
+                         radial-gradient(circle at 50% 100%, rgba(167,139,250,0.05), transparent 45%);}
   .mono{font-family:'JetBrains Mono',monospace;}
   .display{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.02em;}
   a{color:var(--cyan);}
@@ -25,36 +27,44 @@
   header{padding:22px 28px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
   .brand{display:flex;align-items:baseline;gap:10px;}
   .brand .mark{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
-  .brand h1{font-size:22px;margin:0;text-transform:uppercase;}
-  .brand .sub{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.12em;}
-  .race-set{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
-  .race-set input{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:5px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+  .brand h1{font-size:clamp(17px,4vw,22px);margin:0;text-transform:uppercase;}
+  .brand .sub{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;}
+  .race-set{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);flex-wrap:wrap;}
+  .race-set input{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:5px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;max-width:140px;}
 
-  main{max-width:1280px;margin:0 auto;padding:24px 28px 60px;}
+  main{max-width:1280px;margin:0 auto;padding:20px 16px 60px;}
+  @media (min-width:600px){ main{padding:24px 28px 60px;} }
 
   /* Gauge cluster */
-  .cluster{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:22px;}
-  .gauge-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;align-items:center;}
-  .gauge-card .glabel{font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);margin-top:6px;}
-  .gauge-card .gvalue{font-size:26px;margin-top:-46px;}
-  .gauge-card .gsub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .cluster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  @media (min-width:560px){ .cluster{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px;} }
+  .gauge-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;align-items:center;min-width:0;}
+  .gauge-card svg{width:100%;height:auto;max-width:200px;}
+  .gauge-card .glabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:4px;text-align:center;}
+  .gauge-card .gvalue{font-size:clamp(18px,5vw,26px);margin-top:-38px;}
+  .gauge-card .gsub{font-size:10px;color:var(--muted);margin-top:2px;text-align:center;}
   .needle{transform-origin:100px 100px;transition:transform 0.6s cubic-bezier(.4,1.4,.4,1);}
 
   /* Panels */
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
-  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:15px;letter-spacing:0.08em;margin:0 0 14px;color:var(--text);display:flex;align-items:center;gap:8px;}
-  .panel h2::before{content:'';width:3px;height:14px;background:var(--cyan);display:inline-block;}
-  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
-  .grid-charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  @media (max-width:900px){.grid-2,.grid-charts{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 14px;margin-bottom:14px;min-width:0;}
+  @media (min-width:560px){ .panel{padding:18px 20px;margin-bottom:16px;} }
+  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:0.06em;margin:0 0 12px;color:var(--text);display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:3px;height:14px;background:var(--cyan);display:inline-block;flex-shrink:0;}
+  .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
+  .grid-charts{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media (min-width:860px){
+    .grid-2{grid-template-columns:1.4fr 1fr;gap:16px;}
+    .grid-charts{grid-template-columns:1fr 1fr;gap:16px;}
+  }
+  .panel canvas{max-width:100%;}
 
   /* Phase timeline */
-  .timeline{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
-  .phase{flex:1;padding:12px 10px;position:relative;background:var(--panel-alt);border-right:1px solid var(--line);}
+  .timeline{display:flex;flex-wrap:wrap;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
+  .phase{flex:1 1 140px;min-width:120px;padding:10px 8px;position:relative;background:var(--panel-alt);border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
   .phase:last-child{border-right:none;}
-  .phase .pname{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;}
-  .phase .pdate{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px;}
-  .phase.active{background:linear-gradient(180deg, rgba(79,216,203,0.18), rgba(79,216,203,0.04));}
+  .phase .pname{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;}
+  .phase .pdate{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .phase.active{background:linear-gradient(180deg, rgba(34,232,212,0.18), rgba(34,232,212,0.04));}
   .phase.active .pname{color:var(--cyan);}
   .phase.done{opacity:0.45;}
   .phase-bar{height:3px;background:var(--line);margin-top:8px;border-radius:2px;overflow:hidden;}
@@ -63,39 +73,55 @@
   /* Milestones */
   .milestone{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;}
   .milestone:last-child{border-bottom:none;}
-  .milestone input{margin-top:3px;accent-color:var(--cyan);}
+  .milestone input{margin-top:3px;accent-color:var(--cyan);flex-shrink:0;}
   .milestone.checked label{color:var(--muted);text-decoration:line-through;}
   .mphase{font-size:10px;text-transform:uppercase;color:var(--amber);letter-spacing:0.08em;display:block;margin-bottom:6px;margin-top:10px;}
 
   /* Log table */
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  th{text-align:left;color:var(--muted);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:0.08em;padding:6px 8px;border-bottom:1px solid var(--line);}
-  td{padding:7px 8px;border-bottom:1px solid var(--line);}
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
+  th{text-align:left;color:var(--muted);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:0.06em;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
   tr:hover td{background:var(--panel-alt);}
   .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;}
-  .tag-run{background:rgba(79,216,203,0.15);color:var(--cyan);}
-  .tag-bike{background:rgba(242,169,62,0.15);color:var(--amber);}
-  .tag-swim{background:rgba(91,141,239,0.15);color:var(--blue);}
-  .tag-strength{background:rgba(139,151,163,0.15);color:var(--slate);}
-  .tag-cross{background:rgba(226,84,61,0.15);color:var(--red);}
-  .tag-recovery{background:rgba(255,255,255,0.06);color:var(--muted);}
-  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;}
+  .tag-run{background:rgba(34,232,212,0.18);color:var(--cyan);}
+  .tag-bike{background:rgba(255,182,36,0.18);color:var(--amber);}
+  .tag-swim{background:rgba(77,148,255,0.18);color:var(--blue);}
+  .tag-strength{background:rgba(166,183,196,0.18);color:var(--slate);}
+  .tag-cross{background:rgba(255,77,94,0.18);color:var(--red);}
+  .tag-recovery{background:rgba(255,255,255,0.08);color:var(--muted);}
+  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;}
   .del-btn:hover{color:var(--red);}
 
   /* Form */
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .form-row{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px;}
+  @media (min-width:480px){ .form-row{grid-template-columns:1fr 1fr;} }
   .form-row.full{grid-template-columns:1fr;}
+  .form-row.three{grid-template-columns:1fr;}
+  @media (min-width:600px){ .form-row.three{grid-template-columns:1fr 1fr 1fr;} }
   label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
-  input,select{width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;}
-  input:focus,select:focus{outline:1px solid var(--cyan);}
-  button.primary{background:var(--cyan);color:#0a1013;border:none;padding:9px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;letter-spacing:0.02em;}
-  button.primary:hover{filter:brightness(1.1);}
+  input,select{width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:14px;}
+  input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
+  button.primary{background:var(--cyan);color:#04211d;border:none;padding:10px 16px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;letter-spacing:0.02em;}
+  button.primary:hover{filter:brightness(1.12);box-shadow:0 0 16px rgba(34,232,212,0.35);}
+  button.primary.alt{background:var(--purple);color:#1a0f38;}
+  button.primary.alt:hover{box-shadow:0 0 16px rgba(167,139,250,0.4);}
   button.ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;}
   button.ghost:hover{color:var(--text);border-color:var(--muted);}
   .actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
-  .table-wrap{max-height:340px;overflow-y:auto;}
+  .table-wrap{max-height:340px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-top:1px solid var(--line);}
   .empty{color:var(--muted);font-size:12px;padding:14px 0;text-align:center;}
+
+  /* WHOOP ring gauges */
+  .ring-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;margin-bottom:16px;}
+  .ring-card{display:flex;flex-direction:column;align-items:center;}
+  .ring-card .rlabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:8px;}
+  .ring-card .rvalue{font-size:22px;font-weight:700;}
+  .stat-mini{background:var(--panel-alt);border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
+  .stat-mini .slabel{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
+  .stat-mini .sval{font-size:18px;font-weight:700;margin-top:2px;}
+  .stat-mini .sval .unit{font-size:11px;color:var(--muted);font-weight:400;margin-left:2px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:14px;}
 </style>
 </head>
 <body>
@@ -140,6 +166,47 @@
   <div class="panel">
     <h2>Weekly Distance by Sport (mi)</h2>
     <canvas id="distanceChart" height="110"></canvas>
+  </div>
+
+  <div class="panel" style="border-color:rgba(167,139,250,0.3);">
+    <h2 style="--tw:0;"><span style="width:3px;height:14px;background:var(--purple);display:inline-block;margin-right:-4px;"></span>Recovery & Readiness — WHOOP</h2>
+    <div class="ring-row" id="whoopRings"></div>
+    <div class="stat-grid" id="whoopStats"></div>
+    <div class="grid-charts" style="margin-top:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Recovery vs Strain</div>
+        <canvas id="whoopTrendChart" height="180"></canvas>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">HRV vs Resting HR</div>
+        <canvas id="whoopHrvChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <span class="mphase" style="color:var(--purple-bright);">Log Today's WHOOP Data</span>
+    <div class="form-row three">
+      <div><label>Date</label><input type="date" id="whDate"></div>
+      <div><label>Recovery %</label><input type="number" id="whRecovery" min="0" max="100" placeholder="89"></div>
+      <div><label>Strain (0-21)</label><input type="number" step="0.1" id="whStrain" min="0" max="21" placeholder="4.1"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Sleep %</label><input type="number" id="whSleep" min="0" max="100" placeholder="82"></div>
+      <div><label>HRV (ms)</label><input type="number" id="whHrv" placeholder="46"></div>
+      <div><label>Resting HR (bpm)</label><input type="number" id="whRhr" placeholder="58"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Resp. Rate (rpm)</label><input type="number" step="0.1" id="whResp" placeholder="14.4"></div>
+      <div><label>SpO2 (%)</label><input type="number" id="whSpo2" placeholder="95"></div>
+      <div><label>Skin Temp (\u00b0F from baseline)</label><input type="number" step="0.1" id="whSkinTemp" placeholder="1.0"></div>
+    </div>
+    <button class="primary alt" id="addWhoopBtn">Log WHOOP Data</button>
+
+    <div class="table-wrap" style="margin-top:16px;">
+      <table id="whoopTable">
+        <thead><tr><th>Date</th><th>Recovery</th><th>Strain</th><th>Sleep</th><th>HRV</th><th>RHR</th><th>Resp</th><th>SpO2</th><th>Skin \u0394</th><th></th></tr></thead>
+        <tbody id="whoopBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="grid-2">
@@ -221,6 +288,25 @@ const MILESTONES = [
   {phase:'Taper', text:'Gear checked, race logistics confirmed'},
 ];
 const DEFAULT_RACE_DATE = '2027-06-13';
+
+/* ---------------- SEED WHOOP (fallback if whoop.json absent) ---------------- */
+const SEED_WHOOP = [
+  {"date": "2026-07-19", "recovery": 28, "strain": 5.7, "sleepPerf": 33, "hrv": 36, "rhr": 60, "resp": 14.6, "spo2": 95.5, "skinTempC": 34.6, "asleepMin": 177, "sleepNeedMin": 443, "sleepDebtMin": 45, "sleepEff": 98, "deepMin": 57, "remMin": 44, "lightMin": 76, "calories": 2030, "avgHr": 73, "maxHr": 145},
+  {"date": "2026-07-20", "recovery": 39, "strain": 13.0, "sleepPerf": 70, "hrv": 28, "rhr": 66, "resp": 15.0, "spo2": 95.1, "skinTempC": 34.37, "asleepMin": 408, "sleepNeedMin": 515, "sleepDebtMin": 127, "sleepEff": 95, "deepMin": 115, "remMin": 91, "lightMin": 202, "calories": 1925, "avgHr": 78, "maxHr": 180},
+  {"date": "2026-07-21", "recovery": 15, "strain": 4.6, "sleepPerf": 32, "hrv": 23, "rhr": 67, "resp": 15.3, "spo2": 97.4, "skinTempC": 33.78, "asleepMin": 218, "sleepNeedMin": 548, "sleepDebtMin": 69, "sleepEff": 94, "deepMin": 87, "remMin": 54, "lightMin": 77, "calories": 1434, "avgHr": 72, "maxHr": 143},
+  {"date": "2026-07-22", "recovery": 54, "strain": 4.7, "sleepPerf": 70, "hrv": 38, "rhr": 61, "resp": 14.9, "spo2": 97.5, "skinTempC": 33.7, "asleepMin": 415, "sleepNeedMin": 585, "sleepDebtMin": 127, "sleepEff": 94, "deepMin": 110, "remMin": 112, "lightMin": 193, "calories": 1679, "avgHr": 69, "maxHr": 137},
+  {"date": "2026-07-23", "recovery": 16, "strain": 4.5, "sleepPerf": 26, "hrv": 31, "rhr": 62, "resp": 14.8, "spo2": 94.5, "skinTempC": 35.88, "asleepMin": 195, "sleepNeedMin": 566, "sleepDebtMin": 109, "sleepEff": 94, "deepMin": 83, "remMin": 35, "lightMin": 77, "calories": 1941, "avgHr": 70, "maxHr": 143},
+  {"date": "2026-07-24", "recovery": 83, "strain": 5.5, "sleepPerf": 67, "hrv": 44, "rhr": 60, "resp": 14.8, "spo2": 96.8, "skinTempC": 34.72, "asleepMin": 381, "sleepNeedMin": 585, "sleepDebtMin": 127, "sleepEff": 93, "deepMin": 88, "remMin": 98, "lightMin": 195, "calories": 1367, "avgHr": 68, "maxHr": 148},
+  {"date": "2026-07-25", "recovery": 60, "strain": 5.1, "sleepPerf": 60, "hrv": 37, "rhr": 62, "resp": 14.5, "spo2": 97.4, "skinTempC": 34.49, "asleepMin": 336, "sleepNeedMin": 585, "sleepDebtMin": 127, "sleepEff": 93, "deepMin": 78, "remMin": 103, "lightMin": 155, "calories": 1456, "avgHr": 75, "maxHr": 135},
+  {"date": "2026-07-26", "recovery": 39, "strain": 18.1, "sleepPerf": 35, "hrv": 40, "rhr": 60, "resp": 14.7, "spo2": 94.5, "skinTempC": 33.51, "asleepMin": 271, "sleepNeedMin": 642, "sleepDebtMin": 127, "sleepEff": 92, "deepMin": 130, "remMin": 46, "lightMin": 95, "calories": 3414, "avgHr": 79, "maxHr": 192},
+  {"date": "2026-07-27", "recovery": 59, "strain": 4.2, "sleepPerf": 76, "hrv": 35, "rhr": 62, "resp": 14.8, "spo2": 95.1, "skinTempC": 34.16, "asleepMin": 510, "sleepNeedMin": 512, "sleepDebtMin": 127, "sleepEff": 95, "deepMin": 154, "remMin": 135, "lightMin": 221, "calories": 1832, "avgHr": 67, "maxHr": 135},
+  {"date": "2026-07-28", "recovery": 52, "strain": 4.1, "sleepPerf": 68, "hrv": 37, "rhr": 64, "resp": 14.5, "spo2": 94.8, "skinTempC": 34.95, "asleepMin": 353, "sleepNeedMin": 530, "sleepDebtMin": 60, "sleepEff": 98, "deepMin": 112, "remMin": 91, "lightMin": 150, "calories": 2163, "avgHr": 68, "maxHr": 139},
+  {"date": "2026-07-30", "recovery": 93, "strain": 5.8, "sleepPerf": 79, "hrv": 45, "rhr": 58, "resp": 14.7, "spo2": 96.3, "skinTempC": 34.15, "asleepMin": 485, "sleepNeedMin": 431, "sleepDebtMin": 113, "sleepEff": 95, "deepMin": 122, "remMin": 111, "lightMin": 252, "calories": 1871, "avgHr": 66, "maxHr": 148},
+  {"date": "2026-07-31", "recovery": 67, "strain": 4.1, "sleepPerf": 82, "hrv": 39, "rhr": 61, "resp": 14.6, "spo2": 97.3, "skinTempC": 32.9, "asleepMin": 433, "sleepNeedMin": 458, "sleepDebtMin": 0, "sleepEff": 98, "deepMin": 129, "remMin": 123, "lightMin": 181, "calories": 1822, "avgHr": 67, "maxHr": 146},
+  {"date": "2026-08-01", "recovery": 32, "strain": 3.2, "sleepPerf": 80, "hrv": 28, "rhr": 65, "resp": 14.8, "spo2": 95.7, "skinTempC": 34.84, "asleepMin": 365, "sleepNeedMin": 473, "sleepDebtMin": 16, "sleepEff": 96, "deepMin": 119, "remMin": 121, "lightMin": 125, "calories": 1580, "avgHr": 67, "maxHr": 123},
+  {"date": "2026-08-02", "recovery": 89, "sleepPerf": 82, "hrv": 45, "rhr": 58, "resp": 14.4, "spo2": 94.9, "skinTempC": 34.96, "asleepMin": 616, "sleepNeedMin": 525, "sleepDebtMin": 68, "sleepEff": 92, "deepMin": 107, "remMin": 110, "lightMin": 399}
+];
+
 
 /* ---------------- SEED DATA (from Strava, pulled Aug 2 2026) ---------------- */
 const SEED_WORKOUTS = [
@@ -306,6 +392,35 @@ async function loadSyncedWorkouts(){
     syncInfo = {ok:false, checkedAt: new Date().toISOString()};
   }
   rebuildWorkouts();
+}
+
+/* ---------------- WHOOP STATE ---------------- */
+const WHOOP_MANUAL_KEY = 'atlas703_whoop_manual_v1';
+function loadWhoopManual(){
+  const raw = localStorage.getItem(WHOOP_MANUAL_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return []; } }
+  return [];
+}
+function saveWhoopManual(w){ localStorage.setItem(WHOOP_MANUAL_KEY, JSON.stringify(w)); }
+let syncedWhoop = [];
+let manualWhoop = loadWhoopManual();
+let whoopEntries = [];
+function rebuildWhoop(){
+  const byDate = {};
+  syncedWhoop.forEach(w=> byDate[w.date] = {...w, source:'sync'});
+  manualWhoop.forEach(w=> byDate[w.date] = {...w, source:'manual'}); // manual overrides sync for same date
+  whoopEntries = Object.values(byDate).sort((a,b)=> new Date(a.date)-new Date(b.date));
+}
+async function loadSyncedWhoop(){
+  try{
+    const res = await fetch('whoop.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no whoop.json');
+    const data = await res.json();
+    syncedWhoop = data.entries || [];
+  }catch(e){
+    syncedWhoop = SEED_WHOOP.slice();
+  }
+  rebuildWhoop();
 }
 
 /* ---------------- PHASE MATH ---------------- */
@@ -452,7 +567,7 @@ function toggleMilestone(i){
 
 /* ---------------- CHARTS ---------------- */
 let volumeChart, paceChart, distanceChart;
-const SPORT_COLOR = {Run:'#4fd8cb', Bike:'#f2a93e', Swim:'#5b8def', Strength:'#8b97a3', Cross:'#e2543d'};
+const SPORT_COLOR = {Run:'#22e8d4', Bike:'#ffb624', Swim:'#4d94ff', Strength:'#a6b7c4', Cross:'#ff4d5e'};
 
 function isoWeekLabel(d){
   const date = new Date(d);
@@ -507,8 +622,8 @@ function renderPaceChart(){
       datasets:[{
         label:'Pace (min/mi)',
         data: runs.map(r=>+r.pace.toFixed(2)),
-        borderColor:'#4fd8cb', backgroundColor:'rgba(79,216,203,0.15)',
-        tension:0.3, fill:true, pointRadius:4, pointBackgroundColor:'#4fd8cb'
+        borderColor:'#22e8d4', backgroundColor:'rgba(34,232,212,0.15)',
+        tension:0.3, fill:true, pointRadius:4, pointBackgroundColor:'#22e8d4'
       }]
     },
     options:{
@@ -649,6 +764,185 @@ document.getElementById('saveRaceDate').addEventListener('click', ()=>{
   renderAll();
 });
 
+/* ---------------- WHOOP RENDERING ---------------- */
+function ringSVG(pct, color, size){
+  size = size || 92;
+  const r = 38, c = 2*Math.PI*r;
+  const clamped = Math.max(0, Math.min(100, pct||0));
+  const dash = (clamped/100)*c;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--line)" stroke-width="8"/>
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="8"
+      stroke-dasharray="${dash} ${c}" stroke-linecap="round"
+      transform="rotate(-90 50 50)" style="filter:drop-shadow(0 0 6px ${color});"/>
+  </svg>`;
+}
+function recoveryColor(v){
+  if(v == null) return 'var(--muted)';
+  if(v >= 67) return 'var(--green)';
+  if(v >= 34) return 'var(--amber)';
+  return 'var(--red)';
+}
+function fmtMin(m){
+  if(m == null) return '\u2014';
+  const h = Math.floor(m/60), mm = m%60;
+  return `${h}:${String(mm).padStart(2,'0')}`;
+}
+function cToFDelta(c, baseline){
+  if(c == null) return null;
+  // express as delta in F from the trailing baseline of available data
+  return (c - baseline) * 9/5;
+}
+
+function renderWhoopRings(){
+  const el = document.getElementById('whoopRings');
+  const latest = whoopEntries[whoopEntries.length-1];
+  if(!latest){ el.innerHTML = '<div class="empty">No WHOOP data yet.</div>'; return; }
+  const strainPct = latest.strain != null ? (latest.strain/21)*100 : 0;
+  el.innerHTML = `
+    <div class="ring-card">
+      ${ringSVG(latest.sleepPerf, 'var(--blue)')}
+      <div class="rvalue mono" style="margin-top:-58px;color:var(--blue);">${latest.sleepPerf!=null?latest.sleepPerf+'%':'\u2014'}</div>
+      <div class="rlabel" style="margin-top:34px;">Sleep</div>
+    </div>
+    <div class="ring-card">
+      ${ringSVG(latest.recovery, recoveryColor(latest.recovery))}
+      <div class="rvalue mono" style="margin-top:-58px;color:${recoveryColor(latest.recovery)};">${latest.recovery!=null?latest.recovery+'%':'\u2014'}</div>
+      <div class="rlabel" style="margin-top:34px;">Recovery</div>
+    </div>
+    <div class="ring-card">
+      ${ringSVG(strainPct, 'var(--purple)')}
+      <div class="rvalue mono" style="margin-top:-58px;color:var(--purple-bright);">${latest.strain!=null?latest.strain.toFixed(1):'\u2014'}</div>
+      <div class="rlabel" style="margin-top:34px;">Strain</div>
+    </div>
+  `;
+}
+
+function renderWhoopStats(){
+  const el = document.getElementById('whoopStats');
+  const latest = whoopEntries[whoopEntries.length-1];
+  if(!latest){ el.innerHTML = ''; return; }
+  // baseline skin temp = mean of last 30 entries with data
+  const skinVals = whoopEntries.slice(-30).map(e=>e.skinTempC).filter(v=>v!=null);
+  const baseline = skinVals.length ? skinVals.reduce((a,b)=>a+b,0)/skinVals.length : null;
+  const skinDelta = latest.skinTempF != null ? latest.skinTempF
+    : ((baseline!=null && latest.skinTempC!=null) ? cToFDelta(latest.skinTempC, baseline) : null);
+  const cards = [
+    {label:'HRV', val: latest.hrv, unit:'ms', color:'var(--cyan)'},
+    {label:'Resting HR', val: latest.rhr, unit:'bpm', color:'var(--red)'},
+    {label:'Resp. Rate', val: latest.resp, unit:'rpm', color:'var(--blue)'},
+    {label:'SpO\u2082', val: latest.spo2, unit:'%', color:'var(--green)'},
+    {label:'Skin Temp \u0394', val: skinDelta!=null ? (skinDelta>=0?'+':'')+skinDelta.toFixed(1) : null, unit:'\u00b0F', color:'var(--amber)'},
+    {label:'Sleep', val: latest.asleepMin!=null ? fmtMin(latest.asleepMin) : null, unit:'hrs', color:'var(--purple-bright)'},
+    {label:'Sleep Debt', val: latest.sleepDebtMin!=null ? fmtMin(latest.sleepDebtMin) : null, unit:'hrs', color:'var(--slate)'},
+    {label:'Calories', val: latest.calories, unit:'cal', color:'var(--amber)'},
+  ];
+  el.innerHTML = cards.map(c=>`
+    <div class="stat-mini">
+      <div class="slabel">${c.label}</div>
+      <div class="sval" style="color:${c.color};">${c.val!=null?c.val:'\u2014'}<span class="unit">${c.val!=null?c.unit:''}</span></div>
+    </div>`).join('');
+}
+
+let whoopTrendChart, whoopHrvChart;
+function renderWhoopCharts(){
+  const recent = whoopEntries.slice(-30);
+  const labels = recent.map(e=>e.date.slice(5));
+
+  if(whoopTrendChart) whoopTrendChart.destroy();
+  whoopTrendChart = new Chart(document.getElementById('whoopTrendChart'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Recovery %', data:recent.map(e=>e.recovery), borderColor:'#2ee878', backgroundColor:'rgba(46,232,120,0.12)',
+       tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
+      {label:'Strain', data:recent.map(e=>e.strain), borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.1)',
+       tension:0.3, pointRadius:2, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9fb0bd',font:{size:9},maxTicksLimit:8}, grid:{color:'#2c3a48'}},
+        y:{position:'left', min:0, max:100, ticks:{color:'#2ee878',font:{size:10}}, grid:{color:'#2c3a48'}, title:{display:true,text:'Recovery %',color:'#2ee878',font:{size:10}}},
+        y1:{position:'right', min:0, max:21, ticks:{color:'#a78bfa',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'Strain',color:'#a78bfa',font:{size:10}}}
+      },
+      plugins:{legend:{labels:{color:'#f2f6f8',font:{size:10},boxWidth:12}}}
+    }
+  });
+
+  if(whoopHrvChart) whoopHrvChart.destroy();
+  whoopHrvChart = new Chart(document.getElementById('whoopHrvChart'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'HRV (ms)', data:recent.map(e=>e.hrv), borderColor:'#22e8d4', backgroundColor:'rgba(34,232,212,0.12)',
+       tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
+      {label:'Resting HR', data:recent.map(e=>e.rhr), borderColor:'#ff4d5e', backgroundColor:'rgba(255,77,94,0.1)',
+       tension:0.3, pointRadius:2, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9fb0bd',font:{size:9},maxTicksLimit:8}, grid:{color:'#2c3a48'}},
+        y:{position:'left', ticks:{color:'#22e8d4',font:{size:10}}, grid:{color:'#2c3a48'}, title:{display:true,text:'HRV ms',color:'#22e8d4',font:{size:10}}},
+        y1:{position:'right', ticks:{color:'#ff4d5e',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'RHR bpm',color:'#ff4d5e',font:{size:10}}}
+      },
+      plugins:{legend:{labels:{color:'#f2f6f8',font:{size:10},boxWidth:12}}}
+    }
+  });
+}
+
+function renderWhoopTable(){
+  const body = document.getElementById('whoopBody');
+  const sorted = whoopEntries.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,60);
+  if(sorted.length===0){ body.innerHTML = `<tr><td colspan="10"><div class="empty">No WHOOP entries yet.</div></td></tr>`; return; }
+  const skinVals = whoopEntries.slice(-30).map(e=>e.skinTempC).filter(v=>v!=null);
+  const baseline = skinVals.length ? skinVals.reduce((a,b)=>a+b,0)/skinVals.length : null;
+  body.innerHTML = sorted.map(e=>{
+    let sd = null;
+    if(e.skinTempF != null) sd = e.skinTempF;
+    else if(baseline!=null && e.skinTempC!=null) sd = cToFDelta(e.skinTempC, baseline);
+    const del = e.source==='manual' ? `<button class="del-btn" onclick="deleteWhoop('${e.date}')">&times;</button>` : `<span style="color:var(--muted);font-size:11px;">\u2713</span>`;
+    return `<tr>
+      <td class="mono">${e.date}</td>
+      <td class="mono" style="color:${recoveryColor(e.recovery)};font-weight:600;">${e.recovery!=null?e.recovery+'%':'\u2014'}</td>
+      <td class="mono" style="color:var(--purple-bright);">${e.strain!=null?e.strain.toFixed(1):'\u2014'}</td>
+      <td class="mono">${e.sleepPerf!=null?e.sleepPerf+'%':'\u2014'}</td>
+      <td class="mono" style="color:var(--cyan);">${e.hrv??'\u2014'}</td>
+      <td class="mono">${e.rhr??'\u2014'}</td>
+      <td class="mono">${e.resp??'\u2014'}</td>
+      <td class="mono">${e.spo2??'\u2014'}</td>
+      <td class="mono">${sd!=null?(sd>=0?'+':'')+sd.toFixed(1):'\u2014'}</td>
+      <td>${del}</td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteWhoop(date){
+  const idx = manualWhoop.findIndex(w=>w.date===date);
+  if(idx>-1){ manualWhoop.splice(idx,1); saveWhoopManual(manualWhoop); rebuildWhoop(); renderAll(); }
+}
+
+document.getElementById('addWhoopBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('whDate').value;
+  if(!date){ alert('Pick a date first.'); return; }
+  const num = id => { const v = document.getElementById(id).value; return v===''?null:parseFloat(v); };
+  const skinF = num('whSkinTemp');
+  const entry = {
+    date,
+    recovery: num('whRecovery'),
+    strain: num('whStrain'),
+    sleepPerf: num('whSleep'),
+    hrv: num('whHrv'),
+    rhr: num('whRhr'),
+    resp: num('whResp'),
+    spo2: num('whSpo2'),
+    skinTempF: skinF
+  };
+  const existing = manualWhoop.findIndex(w=>w.date===date);
+  if(existing>-1) manualWhoop[existing] = entry; else manualWhoop.push(entry);
+  saveWhoopManual(manualWhoop);
+  rebuildWhoop();
+  ['whRecovery','whStrain','whSleep','whHrv','whRhr','whResp','whSpo2','whSkinTemp'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+});
+
 /* ---------------- INIT ---------------- */
 function renderSyncStatus(){
   const el = document.getElementById('syncStatus');
@@ -668,11 +962,17 @@ function renderAll(){
   renderPaceChart();
   renderDistanceChart();
   renderLogTable();
+  renderWhoopRings();
+  renderWhoopStats();
+  renderWhoopCharts();
+  renderWhoopTable();
 }
 async function init(){
   document.getElementById('raceDateInput').value = raceDate;
-  document.getElementById('wDate').value = new Date().toISOString().slice(0,10);
-  await loadSyncedWorkouts();
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('wDate').value = today;
+  document.getElementById('whDate').value = today;
+  await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop()]);
   renderAll();
 }
 init();
