@@ -9,28 +9,32 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0b0f14; --panel:#151d27; --panel-alt:#1c2733; --line:#2c3a48;
-    --text:#f2f6f8; --muted:#9fb0bd;
-    --cyan:#22e8d4; --amber:#ffb624; --blue:#4d94ff; --slate:#a6b7c4; --red:#ff4d5e; --green:#2ee878;
-    --purple:#a78bfa; --purple-bright:#c4b5fd;
-    --radius:10px;
+    --bg:#0a1230; --panel:#121f4a; --panel-alt:#182a5e; --line:#263a6e;
+    --text:#eef2fc; --muted:#8b98c4;
+    --cyan:#41dcef; --amber:#fbbf42; --blue:#5b7ff0; --slate:#94a3d1; --red:#f8717a; --green:#34d8a3;
+    --purple:#8b7cf0; --purple-bright:#b3a6ff;
+    --deep:#0c1636;
+    --radius:18px; --radius-lg:22px;
+    --shadow: 0 8px 28px rgba(4,8,28,0.45);
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
-       background-image:radial-gradient(circle at 15% 0%, rgba(34,232,212,0.09), transparent 42%),
-                         radial-gradient(circle at 85% 8%, rgba(255,182,36,0.07), transparent 38%),
-                         radial-gradient(circle at 50% 100%, rgba(167,139,250,0.05), transparent 45%);}
+       background-image:radial-gradient(circle at 12% 0%, rgba(65,220,239,0.10), transparent 40%),
+                         radial-gradient(circle at 88% 6%, rgba(91,127,240,0.10), transparent 38%),
+                         radial-gradient(circle at 50% 100%, rgba(139,124,240,0.06), transparent 45%);}
   .mono{font-family:'JetBrains Mono',monospace;}
   .display{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.02em;}
   a{color:var(--cyan);}
 
-  header{padding:22px 28px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
-  .brand{display:flex;align-items:baseline;gap:10px;}
-  .brand .mark{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
-  .brand h1{font-size:clamp(17px,4vw,22px);margin:0;text-transform:uppercase;}
-  .brand .sub{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;}
+  header{margin:18px 16px 16px;padding:14px 22px;border:1px solid var(--line);border-radius:999px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;background:linear-gradient(180deg, rgba(24,42,94,0.8), rgba(18,31,74,0.8));box-shadow:var(--shadow);}
+  @media (min-width:600px){ header{margin:22px 28px 20px;} }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(65,220,239,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .brand .mark::after{content:'';width:10px;height:10px;border-radius:50%;background:var(--deep);}
+  .brand h1{font-size:clamp(15px,3.6vw,19px);margin:0;text-transform:uppercase;letter-spacing:0.02em;}
+  .brand .sub{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;}
   .race-set{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);flex-wrap:wrap;}
-  .race-set input{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:5px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;max-width:140px;}
+  .race-set input{background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:12px;max-width:140px;}
 
   main{max-width:1280px;margin:0 auto;padding:20px 16px 60px;}
   @media (min-width:600px){ main{padding:24px 28px 60px;} }
@@ -38,18 +42,16 @@
   /* Gauge cluster */
   .cluster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
   @media (min-width:560px){ .cluster{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px;} }
-  .gauge-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;align-items:center;min-width:0;}
-  .gauge-card svg{width:100%;height:auto;max-width:200px;}
-  .gauge-card .glabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:4px;text-align:center;}
-  .gauge-card .gvalue{font-size:clamp(18px,5vw,26px);margin-top:-38px;}
+  .gauge-card{background:linear-gradient(165deg, var(--panel), var(--panel-alt));border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 14px;display:flex;flex-direction:column;align-items:center;min-width:0;box-shadow:var(--shadow);}
+  .gauge-card .glabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:8px;text-align:center;}
+  .gauge-card .gvalue{font-size:clamp(18px,4.6vw,24px);font-weight:700;}
   .gauge-card .gsub{font-size:10px;color:var(--muted);margin-top:2px;text-align:center;}
-  .needle{transform-origin:100px 100px;transition:transform 0.6s cubic-bezier(.4,1.4,.4,1);}
 
   /* Panels */
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 14px;margin-bottom:14px;min-width:0;}
-  @media (min-width:560px){ .panel{padding:18px 20px;margin-bottom:16px;} }
-  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:0.06em;margin:0 0 12px;color:var(--text);display:flex;align-items:center;gap:8px;}
-  .panel h2::before{content:'';width:3px;height:14px;background:var(--cyan);display:inline-block;flex-shrink:0;}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 16px;margin-bottom:14px;min-width:0;box-shadow:var(--shadow);}
+  @media (min-width:560px){ .panel{padding:20px 22px;margin-bottom:16px;} }
+  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:0.06em;margin:0 0 14px;color:var(--text);display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--blue));display:inline-block;flex-shrink:0;box-shadow:0 0 8px rgba(65,220,239,0.6);}
   .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
   .grid-charts{display:grid;grid-template-columns:1fr;gap:14px;}
   @media (min-width:860px){
@@ -59,19 +61,18 @@
   .panel canvas{max-width:100%;}
 
   /* Phase timeline */
-  .timeline{display:flex;flex-wrap:wrap;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
-  .phase{flex:1 1 140px;min-width:120px;padding:10px 8px;position:relative;background:var(--panel-alt);border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
-  .phase:last-child{border-right:none;}
+  .timeline{display:flex;flex-wrap:wrap;gap:8px;}
+  .phase{flex:1 1 140px;min-width:120px;padding:12px 14px;position:relative;background:var(--panel-alt);border:1px solid var(--line);border-radius:999px;}
   .phase .pname{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;}
   .phase .pdate{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px;}
-  .phase.active{background:linear-gradient(180deg, rgba(34,232,212,0.18), rgba(34,232,212,0.04));}
+  .phase.active{background:linear-gradient(135deg, rgba(65,220,239,0.28), rgba(91,127,240,0.14));border-color:var(--cyan);}
   .phase.active .pname{color:var(--cyan);}
-  .phase.done{opacity:0.45;}
+  .phase.done{opacity:0.5;}
   .phase-bar{height:3px;background:var(--line);margin-top:8px;border-radius:2px;overflow:hidden;}
-  .phase-bar-fill{height:100%;background:var(--cyan);}
+  .phase-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));}
 
   /* Milestones */
-  .milestone{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .milestone{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px;}
   .milestone:last-child{border-bottom:none;}
   .milestone input{margin-top:3px;accent-color:var(--cyan);flex-shrink:0;}
   .milestone.checked label{color:var(--muted);text-decoration:line-through;}
@@ -83,11 +84,11 @@
   td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
   tr:hover td{background:var(--panel-alt);}
   .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;}
-  .tag-run{background:rgba(34,232,212,0.18);color:var(--cyan);}
-  .tag-bike{background:rgba(255,182,36,0.18);color:var(--amber);}
-  .tag-swim{background:rgba(77,148,255,0.18);color:var(--blue);}
-  .tag-strength{background:rgba(166,183,196,0.18);color:var(--slate);}
-  .tag-cross{background:rgba(255,77,94,0.18);color:var(--red);}
+  .tag-run{background:rgba(65,220,239,0.18);color:var(--cyan);}
+  .tag-bike{background:rgba(251,191,66,0.18);color:var(--amber);}
+  .tag-swim{background:rgba(91,127,240,0.2);color:var(--blue);}
+  .tag-strength{background:rgba(148,163,209,0.18);color:var(--slate);}
+  .tag-cross{background:rgba(248,113,122,0.18);color:var(--red);}
   .tag-recovery{background:rgba(255,255,255,0.08);color:var(--muted);}
   .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;}
   .del-btn:hover{color:var(--red);}
@@ -99,25 +100,28 @@
   .form-row.three{grid-template-columns:1fr;}
   @media (min-width:600px){ .form-row.three{grid-template-columns:1fr 1fr 1fr;} }
   label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
-  input,select{width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:14px;}
+  input,select{width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:9px 12px;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;}
   input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
-  button.primary{background:var(--cyan);color:#04211d;border:none;padding:10px 16px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;letter-spacing:0.02em;}
-  button.primary:hover{filter:brightness(1.12);box-shadow:0 0 16px rgba(34,232,212,0.35);}
-  button.primary.alt{background:var(--purple);color:#1a0f38;}
-  button.primary.alt:hover{box-shadow:0 0 16px rgba(167,139,250,0.4);}
-  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;}
+  button.primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#04213a;border:none;padding:10px 18px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px;letter-spacing:0.02em;}
+  button.primary:hover{filter:brightness(1.1);box-shadow:0 0 18px rgba(65,220,239,0.4);}
+  button.primary.alt{background:linear-gradient(135deg,var(--purple),var(--blue));color:#160f38;}
+  button.primary.alt:hover{box-shadow:0 0 18px rgba(139,124,240,0.4);}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 16px;border-radius:999px;cursor:pointer;font-size:12px;}
   button.ghost:hover{color:var(--text);border-color:var(--muted);}
   .actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
-  .table-wrap{max-height:340px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-top:1px solid var(--line);}
+  .table-wrap{max-height:340px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line);}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;}
   .empty{color:var(--muted);font-size:12px;padding:14px 0;text-align:center;}
 
   /* WHOOP ring gauges */
   .ring-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;margin-bottom:16px;}
   .ring-card{display:flex;flex-direction:column;align-items:center;}
+  .ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:100%;}
+  .ring-wrap svg{width:100%;height:auto;}
+  .ring-value-abs{position:absolute;text-align:center;font-weight:700;}
   .ring-card .rlabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:8px;}
   .ring-card .rvalue{font-size:22px;font-weight:700;}
-  .stat-mini{background:var(--panel-alt);border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
+  .stat-mini{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
   .stat-mini .slabel{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
   .stat-mini .sval{font-size:18px;font-weight:700;margin-top:2px;}
   .stat-mini .sval .unit{font-size:11px;color:var(--muted);font-weight:400;margin-left:2px;}
@@ -504,22 +508,20 @@ function renderGauges(){
   const compliancePct = Math.min(100, (thisWeekCount/targetPerWeek)*100);
 
   const cluster = document.getElementById('gaugeCluster');
+  const daysPct = Math.max(0, Math.min(100, 100 - (Math.max(0,daysToRace)/300*100)));
   cluster.innerHTML = `
     <div class="gauge-card">
-      ${gaugeSVG(Math.max(0,Math.min(600,daysToRace)), 600, null, 'var(--cyan)')}
-      <div class="gvalue mono">${daysToRace}</div>
+      <div class="ring-wrap">${ringSVG(daysPct, 'var(--cyan)', 130)}<div class="ring-value-abs gvalue mono">${daysToRace}</div></div>
       <div class="glabel">Days to Race</div>
       <div class="gsub">${fmtDate(race)}</div>
     </div>
     <div class="gauge-card">
-      ${gaugeSVG(planPct, 100, null, 'var(--amber)')}
-      <div class="gvalue mono">${planPct.toFixed(0)}%</div>
+      <div class="ring-wrap">${ringSVG(planPct, 'var(--blue)', 130)}<div class="ring-value-abs gvalue mono">${planPct.toFixed(0)}%</div></div>
       <div class="glabel">Plan Progress</div>
       <div class="gsub">${phases.find(p=>today>=p.start&&today<=p.end)?.name || (today<planStart?'Not started':'Complete')}</div>
     </div>
     <div class="gauge-card">
-      ${gaugeSVG(compliancePct, 100, [{from:0,to:50,color:'var(--red)'},{from:50,to:85,color:'var(--amber)'},{from:85,to:100,color:'var(--green)'}], 'var(--text)')}
-      <div class="gvalue mono">${thisWeekCount}/${targetPerWeek}</div>
+      <div class="ring-wrap">${ringSVG(compliancePct, recoveryColor(compliancePct), 130)}<div class="ring-value-abs gvalue mono">${thisWeekCount}/${targetPerWeek}</div></div>
       <div class="glabel">This Week's Sessions</div>
       <div class="gsub">${compliancePct.toFixed(0)}% of target</div>
     </div>
@@ -567,7 +569,7 @@ function toggleMilestone(i){
 
 /* ---------------- CHARTS ---------------- */
 let volumeChart, paceChart, distanceChart;
-const SPORT_COLOR = {Run:'#22e8d4', Bike:'#ffb624', Swim:'#4d94ff', Strength:'#a6b7c4', Cross:'#ff4d5e'};
+const SPORT_COLOR = {Run:'#41dcef', Bike:'#fbbf42', Swim:'#5b7ff0', Strength:'#94a3d1', Cross:'#f8717a'};
 
 function isoWeekLabel(d){
   const date = new Date(d);
@@ -602,10 +604,10 @@ function renderVolumeChart(){
     options:{
       responsive:true,
       scales:{
-        x:{stacked:true, ticks:{color:'#90a0ac',font:{size:10}}, grid:{color:'#2e3944'}},
-        y:{stacked:true, ticks:{color:'#90a0ac'}, grid:{color:'#2e3944'}, title:{display:true,text:'hours',color:'#90a0ac'}}
+        x:{stacked:true, ticks:{color:'#8b98c4',font:{size:10}}, grid:{color:'#263a6e'}},
+        y:{stacked:true, ticks:{color:'#8b98c4'}, grid:{color:'#263a6e'}, title:{display:true,text:'hours',color:'#8b98c4'}}
       },
-      plugins:{legend:{labels:{color:'#e7ecef',font:{size:11}}}}
+      plugins:{legend:{labels:{color:'#eef2fc',font:{size:11}}}}
     }
   });
 }
@@ -622,15 +624,15 @@ function renderPaceChart(){
       datasets:[{
         label:'Pace (min/mi)',
         data: runs.map(r=>+r.pace.toFixed(2)),
-        borderColor:'#22e8d4', backgroundColor:'rgba(34,232,212,0.15)',
+        borderColor:'#41dcef', backgroundColor:'rgba(65,220,239,0.15)',
         tension:0.3, fill:true, pointRadius:4, pointBackgroundColor:'#22e8d4'
       }]
     },
     options:{
       responsive:true,
       scales:{
-        x:{ticks:{color:'#90a0ac',font:{size:10}}, grid:{color:'#2e3944'}},
-        y:{reverse:false, ticks:{color:'#90a0ac'}, grid:{color:'#2e3944'}, title:{display:true,text:'min/mi',color:'#90a0ac'}}
+        x:{ticks:{color:'#8b98c4',font:{size:10}}, grid:{color:'#263a6e'}},
+        y:{reverse:false, ticks:{color:'#8b98c4'}, grid:{color:'#263a6e'}, title:{display:true,text:'min/mi',color:'#8b98c4'}}
       },
       plugins:{legend:{display:false}}
     }
@@ -661,10 +663,10 @@ function renderDistanceChart(){
     options:{
       responsive:true,
       scales:{
-        x:{ticks:{color:'#90a0ac',font:{size:10}}, grid:{color:'#2e3944'}},
-        y:{ticks:{color:'#90a0ac'}, grid:{color:'#2e3944'}, title:{display:true,text:'miles',color:'#90a0ac'}}
+        x:{ticks:{color:'#8b98c4',font:{size:10}}, grid:{color:'#263a6e'}},
+        y:{ticks:{color:'#8b98c4'}, grid:{color:'#263a6e'}, title:{display:true,text:'miles',color:'#8b98c4'}}
       },
-      plugins:{legend:{labels:{color:'#e7ecef',font:{size:11}}}}
+      plugins:{legend:{labels:{color:'#eef2fc',font:{size:11}}}}
     }
   });
 }
@@ -801,19 +803,16 @@ function renderWhoopRings(){
   const strainPct = latest.strain != null ? (latest.strain/21)*100 : 0;
   el.innerHTML = `
     <div class="ring-card">
-      ${ringSVG(latest.sleepPerf, 'var(--blue)')}
-      <div class="rvalue mono" style="margin-top:-58px;color:var(--blue);">${latest.sleepPerf!=null?latest.sleepPerf+'%':'\u2014'}</div>
-      <div class="rlabel" style="margin-top:34px;">Sleep</div>
+      <div class="ring-wrap">${ringSVG(latest.sleepPerf, 'var(--blue)', 110)}<div class="ring-value-abs rvalue mono" style="color:var(--blue);">${latest.sleepPerf!=null?latest.sleepPerf+'%':'\u2014'}</div></div>
+      <div class="rlabel">Sleep</div>
     </div>
     <div class="ring-card">
-      ${ringSVG(latest.recovery, recoveryColor(latest.recovery))}
-      <div class="rvalue mono" style="margin-top:-58px;color:${recoveryColor(latest.recovery)};">${latest.recovery!=null?latest.recovery+'%':'\u2014'}</div>
-      <div class="rlabel" style="margin-top:34px;">Recovery</div>
+      <div class="ring-wrap">${ringSVG(latest.recovery, recoveryColor(latest.recovery), 110)}<div class="ring-value-abs rvalue mono" style="color:${recoveryColor(latest.recovery)};">${latest.recovery!=null?latest.recovery+'%':'\u2014'}</div></div>
+      <div class="rlabel">Recovery</div>
     </div>
     <div class="ring-card">
-      ${ringSVG(strainPct, 'var(--purple)')}
-      <div class="rvalue mono" style="margin-top:-58px;color:var(--purple-bright);">${latest.strain!=null?latest.strain.toFixed(1):'\u2014'}</div>
-      <div class="rlabel" style="margin-top:34px;">Strain</div>
+      <div class="ring-wrap">${ringSVG(strainPct, 'var(--purple)', 110)}<div class="ring-value-abs rvalue mono" style="color:var(--purple-bright);">${latest.strain!=null?latest.strain.toFixed(1):'\u2014'}</div></div>
+      <div class="rlabel">Strain</div>
     </div>
   `;
 }
@@ -853,18 +852,18 @@ function renderWhoopCharts(){
   whoopTrendChart = new Chart(document.getElementById('whoopTrendChart'), {
     type:'line',
     data:{labels, datasets:[
-      {label:'Recovery %', data:recent.map(e=>e.recovery), borderColor:'#2ee878', backgroundColor:'rgba(46,232,120,0.12)',
+      {label:'Recovery %', data:recent.map(e=>e.recovery), borderColor:'#34d8a3', backgroundColor:'rgba(52,216,163,0.12)',
        tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
-      {label:'Strain', data:recent.map(e=>e.strain), borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.1)',
+      {label:'Strain', data:recent.map(e=>e.strain), borderColor:'#8b7cf0', backgroundColor:'rgba(139,124,240,0.1)',
        tension:0.3, pointRadius:2, yAxisID:'y1'}
     ]},
     options:{responsive:true, interaction:{mode:'index',intersect:false},
       scales:{
-        x:{ticks:{color:'#9fb0bd',font:{size:9},maxTicksLimit:8}, grid:{color:'#2c3a48'}},
-        y:{position:'left', min:0, max:100, ticks:{color:'#2ee878',font:{size:10}}, grid:{color:'#2c3a48'}, title:{display:true,text:'Recovery %',color:'#2ee878',font:{size:10}}},
-        y1:{position:'right', min:0, max:21, ticks:{color:'#a78bfa',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'Strain',color:'#a78bfa',font:{size:10}}}
+        x:{ticks:{color:'#8b98c4',font:{size:9},maxTicksLimit:8}, grid:{color:'#263a6e'}},
+        y:{position:'left', min:0, max:100, ticks:{color:'#34d8a3',font:{size:10}}, grid:{color:'#263a6e'}, title:{display:true,text:'Recovery %',color:'#34d8a3',font:{size:10}}},
+        y1:{position:'right', min:0, max:21, ticks:{color:'#8b7cf0',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'Strain',color:'#8b7cf0',font:{size:10}}}
       },
-      plugins:{legend:{labels:{color:'#f2f6f8',font:{size:10},boxWidth:12}}}
+      plugins:{legend:{labels:{color:'#eef2fc',font:{size:10},boxWidth:12}}}
     }
   });
 
@@ -872,18 +871,18 @@ function renderWhoopCharts(){
   whoopHrvChart = new Chart(document.getElementById('whoopHrvChart'), {
     type:'line',
     data:{labels, datasets:[
-      {label:'HRV (ms)', data:recent.map(e=>e.hrv), borderColor:'#22e8d4', backgroundColor:'rgba(34,232,212,0.12)',
+      {label:'HRV (ms)', data:recent.map(e=>e.hrv), borderColor:'#41dcef', backgroundColor:'rgba(65,220,239,0.12)',
        tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
-      {label:'Resting HR', data:recent.map(e=>e.rhr), borderColor:'#ff4d5e', backgroundColor:'rgba(255,77,94,0.1)',
+      {label:'Resting HR', data:recent.map(e=>e.rhr), borderColor:'#f8717a', backgroundColor:'rgba(248,113,122,0.1)',
        tension:0.3, pointRadius:2, yAxisID:'y1'}
     ]},
     options:{responsive:true, interaction:{mode:'index',intersect:false},
       scales:{
-        x:{ticks:{color:'#9fb0bd',font:{size:9},maxTicksLimit:8}, grid:{color:'#2c3a48'}},
-        y:{position:'left', ticks:{color:'#22e8d4',font:{size:10}}, grid:{color:'#2c3a48'}, title:{display:true,text:'HRV ms',color:'#22e8d4',font:{size:10}}},
-        y1:{position:'right', ticks:{color:'#ff4d5e',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'RHR bpm',color:'#ff4d5e',font:{size:10}}}
+        x:{ticks:{color:'#8b98c4',font:{size:9},maxTicksLimit:8}, grid:{color:'#263a6e'}},
+        y:{position:'left', ticks:{color:'#41dcef',font:{size:10}}, grid:{color:'#263a6e'}, title:{display:true,text:'HRV ms',color:'#41dcef',font:{size:10}}},
+        y1:{position:'right', ticks:{color:'#f8717a',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'RHR bpm',color:'#f8717a',font:{size:10}}}
       },
-      plugins:{legend:{labels:{color:'#f2f6f8',font:{size:10},boxWidth:12}}}
+      plugins:{legend:{labels:{color:'#eef2fc',font:{size:10},boxWidth:12}}}
     }
   });
 }
