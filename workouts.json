@@ -1,36 +1,216 @@
 {
-  "syncedAt": "2026-08-02T21:00:00Z",
+  "syncedAt": "2026-08-04T00:00:00Z",
   "source": "manual Strava pull",
   "workouts": [
-    {"date":"2026-07-30", "sport":"Strength", "duration":21, "distance":null, "notes":"Evening weight training"},
-    {"date":"2026-07-28", "sport":"Recovery", "duration":22, "distance":1.05, "notes":"Afternoon walk"},
-    {"date":"2026-07-28", "sport":"Run", "duration":23, "distance":2.40, "notes":"Afternoon run"},
-    {"date":"2026-07-26", "sport":"Cross", "duration":121, "distance":null, "notes":"Morning soccer"},
-    {"date":"2026-07-24", "sport":"Strength", "duration":20, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-07-22", "sport":"Strength", "duration":11, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-07-21", "sport":"Recovery", "duration":26, "distance":null, "notes":"Morning walk"},
-    {"date":"2026-07-21", "sport":"Run", "duration":20, "distance":null, "notes":"Morning run"},
-    {"date":"2026-07-16", "sport":"Strength", "duration":16, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-07-05", "sport":"Strength", "duration":18, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-07-02", "sport":"Strength", "duration":44, "distance":null, "notes":"Evening weight training"},
-    {"date":"2026-06-26", "sport":"Cross", "duration":110, "distance":null, "notes":"Evening soccer"},
-    {"date":"2026-06-26", "sport":"Strength", "duration":26, "distance":null, "notes":"Morning weight training"},
-    {"date":"2026-06-25", "sport":"Strength", "duration":46, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-06-19", "sport":"Strength", "duration":66, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-06-10", "sport":"Strength", "duration":52, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-06-09", "sport":"Cross", "duration":114, "distance":null, "notes":"Evening soccer"},
-    {"date":"2026-06-07", "sport":"Cross", "duration":116, "distance":null, "notes":"Morning soccer"},
-    {"date":"2026-06-05", "sport":"Strength", "duration":19, "distance":null, "notes":"Afternoon weight training"},
-    {"date":"2026-06-01", "sport":"Run", "duration":24, "distance":2.87, "notes":"Night run"},
-    {"date":"2026-05-31", "sport":"Strength", "duration":38, "distance":null, "notes":"Night weight training"},
-    {"date":"2026-05-30", "sport":"Run", "duration":29, "distance":null, "notes":"Evening run"},
-    {"date":"2026-05-26", "sport":"Run", "duration":116, "distance":null, "notes":"Evening run"},
-    {"date":"2026-05-25", "sport":"Cross", "duration":96, "distance":null, "notes":"Morning soccer"},
-    {"date":"2026-05-20", "sport":"Run", "duration":25, "distance":null, "notes":"Afternoon run"},
-    {"date":"2026-05-17", "sport":"Cross", "duration":123, "distance":null, "notes":"Morning soccer"},
-    {"date":"2026-05-03", "sport":"Cross", "duration":138, "distance":null, "notes":"Morning soccer"},
-    {"date":"2026-04-17", "sport":"Cross", "duration":55, "distance":null, "notes":"Evening soccer"},
-    {"date":"2026-03-31", "sport":"Cross", "duration":103, "distance":null, "notes":"Evening soccer"},
-    {"date":"2026-03-26", "sport":"Cross", "duration":66, "distance":null, "notes":"Night soccer"}
+    {
+      "date": "2026-07-30",
+      "sport": "Strength",
+      "duration": 21,
+      "distance": null,
+      "notes": "Evening weight training"
+    },
+    {
+      "date": "2026-07-28",
+      "sport": "Recovery",
+      "duration": 22,
+      "distance": 1.05,
+      "notes": "Afternoon walk"
+    },
+    {
+      "date": "2026-07-28",
+      "sport": "Run",
+      "duration": 23,
+      "distance": 2.4,
+      "notes": "Afternoon run"
+    },
+    {
+      "date": "2026-07-26",
+      "sport": "Cross",
+      "duration": 121,
+      "distance": null,
+      "notes": "Morning soccer"
+    },
+    {
+      "date": "2026-07-24",
+      "sport": "Strength",
+      "duration": 20,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-07-22",
+      "sport": "Strength",
+      "duration": 11,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-07-21",
+      "sport": "Recovery",
+      "duration": 26,
+      "distance": null,
+      "notes": "Morning walk"
+    },
+    {
+      "date": "2026-07-21",
+      "sport": "Run",
+      "duration": 20,
+      "distance": null,
+      "notes": "Morning run"
+    },
+    {
+      "date": "2026-07-16",
+      "sport": "Strength",
+      "duration": 16,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-07-05",
+      "sport": "Strength",
+      "duration": 18,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-07-02",
+      "sport": "Strength",
+      "duration": 44,
+      "distance": null,
+      "notes": "Evening weight training"
+    },
+    {
+      "date": "2026-06-26",
+      "sport": "Cross",
+      "duration": 110,
+      "distance": null,
+      "notes": "Evening soccer"
+    },
+    {
+      "date": "2026-06-26",
+      "sport": "Strength",
+      "duration": 26,
+      "distance": null,
+      "notes": "Morning weight training"
+    },
+    {
+      "date": "2026-06-25",
+      "sport": "Strength",
+      "duration": 46,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-06-19",
+      "sport": "Strength",
+      "duration": 66,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-06-10",
+      "sport": "Strength",
+      "duration": 52,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-06-09",
+      "sport": "Cross",
+      "duration": 114,
+      "distance": null,
+      "notes": "Evening soccer"
+    },
+    {
+      "date": "2026-06-07",
+      "sport": "Cross",
+      "duration": 116,
+      "distance": null,
+      "notes": "Morning soccer"
+    },
+    {
+      "date": "2026-06-05",
+      "sport": "Strength",
+      "duration": 19,
+      "distance": null,
+      "notes": "Afternoon weight training"
+    },
+    {
+      "date": "2026-06-01",
+      "sport": "Run",
+      "duration": 24,
+      "distance": 2.87,
+      "notes": "Night run"
+    },
+    {
+      "date": "2026-05-31",
+      "sport": "Strength",
+      "duration": 38,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-05-30",
+      "sport": "Run",
+      "duration": 29,
+      "distance": null,
+      "notes": "Evening run"
+    },
+    {
+      "date": "2026-05-26",
+      "sport": "Run",
+      "duration": 116,
+      "distance": null,
+      "notes": "Evening run"
+    },
+    {
+      "date": "2026-05-25",
+      "sport": "Cross",
+      "duration": 96,
+      "distance": null,
+      "notes": "Morning soccer"
+    },
+    {
+      "date": "2026-05-20",
+      "sport": "Run",
+      "duration": 25,
+      "distance": null,
+      "notes": "Afternoon run"
+    },
+    {
+      "date": "2026-05-17",
+      "sport": "Cross",
+      "duration": 123,
+      "distance": null,
+      "notes": "Morning soccer"
+    },
+    {
+      "date": "2026-05-03",
+      "sport": "Cross",
+      "duration": 138,
+      "distance": null,
+      "notes": "Morning soccer"
+    },
+    {
+      "date": "2026-04-17",
+      "sport": "Cross",
+      "duration": 55,
+      "distance": null,
+      "notes": "Evening soccer"
+    },
+    {
+      "date": "2026-03-31",
+      "sport": "Cross",
+      "duration": 103,
+      "distance": null,
+      "notes": "Evening soccer"
+    },
+    {
+      "date": "2026-03-26",
+      "sport": "Cross",
+      "duration": 66,
+      "distance": null,
+      "notes": "Night soccer"
+    }
   ]
 }
