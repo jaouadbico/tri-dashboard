@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Jaouad's 70.3 — Training Instrumentation</title>
+
+<!-- iOS "Add to Home Screen" support -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="70.3 Dash">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -26,7 +36,8 @@
   .display{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.02em;}
   a{color:var(--cyan);}
 
-  header{margin:18px 16px 16px;padding:14px 22px;border:1px solid var(--line);border-radius:999px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;background:linear-gradient(180deg, rgba(24,42,94,0.8), rgba(18,31,74,0.8));box-shadow:var(--shadow);}
+  header{margin:calc(env(safe-area-inset-top, 0px) + 12px) 16px 16px;padding:14px 22px;border:1px solid var(--line);border-radius:999px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;background:linear-gradient(180deg, var(--panel-alt), var(--panel));box-shadow:var(--shadow);}
+  body{padding-bottom:env(safe-area-inset-bottom, 0px);}
   @media (min-width:600px){ header{margin:22px 28px 20px;} }
   .brand{display:flex;align-items:center;gap:10px;}
   .brand .mark{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(232,17,45,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
@@ -975,6 +986,12 @@ async function init(){
   renderAll();
 }
 init();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW registration failed:', err));
+  });
+}
 </script>
 </body>
 </html>
