@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-04T00:00:00Z",
+  "syncedAt": "2026-08-05T12:00:00Z",
   "source": "manual Strava pull",
   "workouts": [
     {
@@ -211,6 +211,13 @@
       "duration": 66,
       "distance": null,
       "notes": "Night soccer"
+    },
+    {
+      "date": "2026-08-04",
+      "sport": "Cross",
+      "duration": 101,
+      "distance": null,
+      "notes": "Evening soccer \u2014 high strain (17.5), ~1298 cal"
     }
   ]
 }
