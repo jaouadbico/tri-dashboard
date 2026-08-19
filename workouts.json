@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-05T12:00:00Z",
+  "syncedAt": "2026-08-19T09:00:00Z",
   "source": "manual Strava pull",
   "workouts": [
     {
@@ -218,6 +218,41 @@
       "duration": 101,
       "distance": null,
       "notes": "Evening soccer \u2014 high strain (17.5), ~1298 cal"
+    },
+    {
+      "date": "2026-08-09",
+      "sport": "Bike",
+      "duration": 179,
+      "distance": 41.69,
+      "notes": "Morning ride \u2014 454m elevation gain, ~1344 cal"
+    },
+    {
+      "date": "2026-08-11",
+      "sport": "Run",
+      "duration": 19,
+      "distance": 2.27,
+      "notes": "Afternoon run \u2014 cadence ~162 spm"
+    },
+    {
+      "date": "2026-08-13",
+      "sport": "Strength",
+      "duration": 25,
+      "distance": null,
+      "notes": "Night weight training"
+    },
+    {
+      "date": "2026-08-18",
+      "sport": "Swim",
+      "duration": 6,
+      "distance": 0.14,
+      "notes": "Afternoon swim \u2014 225m, pace ~2:44/100m"
+    },
+    {
+      "date": "2026-08-18",
+      "sport": "Run",
+      "duration": 108,
+      "distance": 10.92,
+      "notes": "Night run \u2014 cadence ~155 spm, 175m elevation gain"
     }
   ]
 }
