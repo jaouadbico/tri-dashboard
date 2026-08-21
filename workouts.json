@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-19T09:00:00Z",
+  "syncedAt": "2026-08-21T09:05:00Z",
   "source": "manual Strava pull",
   "workouts": [
     {
@@ -253,6 +253,20 @@
       "duration": 108,
       "distance": 10.92,
       "notes": "Night run \u2014 cadence ~155 spm, 175m elevation gain"
+    },
+    {
+      "date": "2026-08-20",
+      "sport": "Cross",
+      "duration": 5,
+      "distance": null,
+      "notes": "Night workout \u2014 ~49 cal"
+    },
+    {
+      "date": "2026-08-20",
+      "sport": "Strength",
+      "duration": 10,
+      "distance": null,
+      "notes": "Night weight training"
     }
   ]
 }
