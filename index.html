@@ -199,10 +199,21 @@
     RACE DATE
     <input type="date" id="raceDateInput">
     <button class="ghost" id="saveRaceDate">Set</button>
+    <a href="plan.html" class="ghost" style="text-decoration:none;display:inline-block;">Program &rarr;</a>
   </div>
 </header>
 
 <main>
+
+  <a href="plan.html" style="text-decoration:none;display:block;margin-bottom:16px;">
+    <div class="panel" style="display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg, rgba(232,17,45,0.18), var(--panel));border-color:var(--cyan);cursor:pointer;">
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:0.02em;color:var(--text);">Today's Training Program</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">See today's session, this week's plan, and the full 44-week roadmap</div>
+      </div>
+      <div style="font-size:24px;color:var(--cyan);flex-shrink:0;margin-left:12px;">&rarr;</div>
+    </div>
+  </a>
 
   <div class="cluster" id="gaugeCluster"></div>
 
