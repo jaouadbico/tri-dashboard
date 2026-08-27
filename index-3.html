@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Jaouad's 70.3 — Training Instrumentation</title>
+
+<!-- iOS "Add to Home Screen" support -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="70.3 Dash">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
+    --text:#f5f5f6; --muted:#9a9aa2;
+    --cyan:#e8112d; --amber:#ff6a3d; --blue:#f5f5f6; --slate:#9a9aa2; --red:#c81e3a; --green:#2fd88a;
+    --purple:#8a1c2b; --purple-bright:#c23b52; --yellow:#e8c547;
+    --deep:#050506;
+    --radius:18px; --radius-lg:22px;
+    --shadow: 0 8px 28px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
+       background-image:radial-gradient(circle at 12% 0%, rgba(232,17,45,0.12), transparent 40%),
+                         radial-gradient(circle at 88% 6%, rgba(255,255,255,0.05), transparent 38%),
+                         radial-gradient(circle at 50% 100%, rgba(138,28,43,0.10), transparent 45%);}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.02em;}
+  a{color:var(--cyan);}
+
+  header{margin:calc(env(safe-area-inset-top, 0px) + 12px) 16px 16px;padding:14px 22px;border:1px solid var(--line);border-radius:999px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;background:linear-gradient(180deg, var(--panel-alt), var(--panel));box-shadow:var(--shadow);}
+  body{padding-bottom:env(safe-area-inset-bottom, 0px);}
+  @media (min-width:600px){ header{margin:22px 28px 20px;} }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(232,17,45,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .brand .mark::after{content:'';width:10px;height:10px;border-radius:50%;background:var(--deep);}
+  .brand h1{font-size:clamp(15px,3.6vw,19px);margin:0;text-transform:uppercase;letter-spacing:0.02em;}
+  .brand .sub{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;}
+  .race-set{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);flex-wrap:wrap;}
+  .race-set input{background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:12px;max-width:140px;}
+
+  main{max-width:1280px;margin:0 auto;padding:20px 16px 60px;}
+  @media (min-width:600px){ main{padding:24px 28px 60px;} }
+
+  /* Gauge cluster */
+  .cluster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  @media (min-width:560px){ .cluster{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px;} }
+  .gauge-card{background:linear-gradient(165deg, var(--panel), var(--panel-alt));border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 14px;display:flex;flex-direction:column;align-items:center;min-width:0;box-shadow:var(--shadow);}
+  .gauge-card .glabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:8px;text-align:center;}
+  .gauge-card .gvalue{font-size:clamp(18px,4.6vw,24px);font-weight:700;}
+  .gauge-card .gsub{font-size:10px;color:var(--muted);margin-top:2px;text-align:center;}
+
+  /* Panels */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 16px;margin-bottom:14px;min-width:0;box-shadow:var(--shadow);}
+  @media (min-width:560px){ .panel{padding:20px 22px;margin-bottom:16px;} }
+  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:0.06em;margin:0 0 14px;color:var(--text);display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--blue));display:inline-block;flex-shrink:0;box-shadow:0 0 8px rgba(232,17,45,0.6);}
+  .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
+  .grid-charts{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media (min-width:860px){
+    .grid-2{grid-template-columns:1.4fr 1fr;gap:16px;}
+    .grid-charts{grid-template-columns:1fr 1fr;gap:16px;}
+  }
+  .panel canvas{max-width:100%;}
+
+  /* Phase timeline */
+  .timeline{display:flex;flex-wrap:wrap;gap:8px;}
+  .phase{flex:1 1 140px;min-width:120px;padding:12px 14px;position:relative;background:var(--panel-alt);border:1px solid var(--line);border-radius:999px;}
+  .phase .pname{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;}
+  .phase .pdate{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .phase.active{background:linear-gradient(135deg, rgba(232,17,45,0.28), rgba(245,245,246,0.14));border-color:var(--cyan);}
+  .phase.active .pname{color:var(--cyan);}
+  .phase.done{opacity:0.5;}
+  .phase-bar{height:3px;background:var(--line);margin-top:8px;border-radius:2px;overflow:hidden;}
+  .phase-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));}
+
+  /* Milestones */
+  .milestone{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .milestone:last-child{border-bottom:none;}
+  .milestone input{width:auto;margin-top:3px;accent-color:var(--cyan);flex-shrink:0;}
+  .milestone.checked label{color:var(--muted);text-decoration:line-through;}
+  .mphase{font-size:10px;text-transform:uppercase;color:var(--amber);letter-spacing:0.08em;display:block;margin-bottom:6px;margin-top:10px;}
+
+  /* Log table */
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
+  th{text-align:left;color:var(--muted);font-weight:500;text-transform:uppercase;font-size:10px;letter-spacing:0.06em;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  tr:hover td{background:var(--panel-alt);}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;}
+  .tag-run{background:rgba(232,17,45,0.18);color:var(--cyan);}
+  .tag-bike{background:rgba(255,106,61,0.18);color:var(--amber);}
+  .tag-swim{background:rgba(245,245,246,0.2);color:var(--blue);}
+  .tag-strength{background:rgba(154,154,162,0.18);color:var(--slate);}
+  .tag-cross{background:rgba(200,30,58,0.18);color:var(--red);}
+  .tag-recovery{background:rgba(255,255,255,0.08);color:var(--muted);}
+  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;}
+  .del-btn:hover{color:var(--red);}
+
+  /* Form */
+  .form-row{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px;}
+  @media (min-width:480px){ .form-row{grid-template-columns:1fr 1fr;} }
+  .form-row.full{grid-template-columns:1fr;}
+  .form-row.three{grid-template-columns:1fr;}
+  @media (min-width:600px){ .form-row.three{grid-template-columns:1fr 1fr 1fr;} }
+  label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
+  input,select{width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:9px 12px;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;}
+  input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
+  button.primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#04213a;border:none;padding:10px 18px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px;letter-spacing:0.02em;}
+  button.primary:hover{filter:brightness(1.1);box-shadow:0 0 18px rgba(232,17,45,0.4);}
+  button.primary.alt{background:linear-gradient(135deg,var(--purple),var(--blue));color:#160f38;}
+  button.primary.alt:hover{box-shadow:0 0 18px rgba(138,28,43,0.4);}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 16px;border-radius:999px;cursor:pointer;font-size:12px;}
+  button.ghost:hover{color:var(--text);border-color:var(--muted);}
+  .actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+  .table-wrap{max-height:340px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line);}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;}
+  .empty{color:var(--muted);font-size:12px;padding:14px 0;text-align:center;}
+
+  /* WHOOP ring gauges */
+  .ring-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;margin-bottom:16px;}
+  .ring-card{display:flex;flex-direction:column;align-items:center;}
+  .ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:100%;}
+  .ring-wrap svg{width:100%;height:auto;}
+  .ring-value-abs{position:absolute;text-align:center;font-weight:700;}
+  .ring-card .rlabel{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-top:8px;}
+  .ring-card .rvalue{font-size:22px;font-weight:700;}
+  .stat-mini{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .stat-mini .slabel{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
+  .stat-mini .sval{font-size:18px;font-weight:700;margin-top:2px;}
+  .stat-mini .sval .unit{font-size:11px;color:var(--muted);font-weight:400;margin-left:2px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:14px;}
+
+  /* Profile / nutrition */
+  .profile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media (min-width:600px){ .profile-grid{grid-template-columns:repeat(3,1fr);} }
+  .nutri-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px;}
+  .nutri-card{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:center;}
+  .nutri-card .nlabel{font-size:9.5px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
+  .nutri-card .nval{font-size:20px;font-weight:700;margin-top:3px;}
+  .nutri-card .nunit{font-size:10px;color:var(--muted);font-weight:400;}
+  .nutri-note{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5;}
+
+  /* Zones */
+  .zone-block{margin-bottom:16px;}
+  .zone-block:last-child{margin-bottom:0;}
+  .zone-title{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;}
+  .zone-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;}
+  .zone-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  .zone-name{width:26px;flex-shrink:0;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .zone-range{flex:1;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .zone-desc{color:var(--muted);font-size:10.5px;}
+
+  /* Workout detail badges in log table */
+  .badge-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+  .badge{font-size:9.5px;background:var(--panel-alt);border:1px solid var(--line);border-radius:20px;padding:1px 7px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .sport-fields{display:none;}
+  .sport-fields.active{display:grid;}
+
+  /* Strength training overview */
+  .st-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .pill-select{background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:999px;font-size:12px;font-family:'Inter',sans-serif;}
+  .st-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  @media (min-width:560px){ .st-grid{grid-template-columns:repeat(3,1fr);} }
+  .st-stat{display:flex;align-items:flex-start;gap:10px;}
+  .swatch-square{width:11px;height:11px;border-radius:3px;flex-shrink:0;margin-top:4px;}
+  .st-stat .slabel{font-size:12px;color:var(--text);}
+  .st-stat .sval{font-size:15px;font-weight:700;margin-top:1px;}
+  .st-stat .sdelta{font-size:10.5px;margin-top:1px;font-family:'JetBrains Mono',monospace;}
+  .sdelta.up{color:var(--cyan);}
+  .sdelta.down{color:var(--red);}
+  .goal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px;}
+  .goal-card{display:flex;flex-direction:column;align-items:center;}
+  .goal-card .glift{font-size:12px;color:var(--text);margin-top:8px;font-weight:600;}
+  .goal-card .gcurrent{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .goal-card input{margin-top:8px;text-align:center;font-size:12px;padding:6px 8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>Jaouad's 70.3 Instrumentation</h1>
+      <div class="sub">Half Ironman Build &mdash; Aug 2026 → Race Day</div>
+    </div>
+  </div>
+  <div class="race-set">
+    <span id="syncStatus" class="mono">checking sync\u2026</span>
+    <span style="opacity:0.4;">|</span>
+    RACE DATE
+    <input type="date" id="raceDateInput">
+    <button class="ghost" id="saveRaceDate">Set</button>
+    <a href="plan.html" class="ghost" style="text-decoration:none;display:inline-block;">Program &rarr;</a>
+  </div>
+</header>
+
+<main>
+
+  <a href="plan.html" style="text-decoration:none;display:block;margin-bottom:16px;">
+    <div class="panel" style="display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg, rgba(232,17,45,0.18), var(--panel));border-color:var(--cyan);cursor:pointer;">
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:0.02em;color:var(--text);">Today's Training Program</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">See today's session, this week's plan, and the full 44-week roadmap</div>
+      </div>
+      <div style="font-size:24px;color:var(--cyan);flex-shrink:0;margin-left:12px;">&rarr;</div>
+    </div>
+  </a>
+
+  <div class="cluster" id="gaugeCluster"></div>
+
+  <div class="panel">
+    <h2>Phase Timeline</h2>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <div class="grid-charts">
+    <div class="panel">
+      <h2>Weekly Training Hours by Discipline</h2>
+      <canvas id="volumeChart" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Run Pace Trend (min/mi, lower = faster)</h2>
+      <canvas id="paceChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Weekly Distance by Sport (mi)</h2>
+    <canvas id="distanceChart" height="110"></canvas>
+  </div>
+
+  <div class="panel" style="border-color:rgba(167,139,250,0.3);">
+    <h2 style="--tw:0;"><span style="width:3px;height:14px;background:var(--purple);display:inline-block;margin-right:-4px;"></span>Recovery & Readiness — WHOOP</h2>
+    <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;" id="whoopAvgLabel"></div>
+    <div class="ring-row" id="whoopRings"></div>
+    <div class="stat-grid" id="whoopStats"></div>
+    <div class="grid-charts" style="margin-top:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Recovery vs Strain</div>
+        <canvas id="whoopTrendChart" height="180"></canvas>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">HRV vs Resting HR</div>
+        <canvas id="whoopHrvChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <span class="mphase" style="color:var(--purple-bright);">Log Today's WHOOP Data</span>
+    <div class="form-row three">
+      <div><label>Date</label><input type="date" id="whDate"></div>
+      <div><label>Recovery %</label><input type="number" id="whRecovery" min="0" max="100" placeholder="89"></div>
+      <div><label>Strain (0-21)</label><input type="number" step="0.1" id="whStrain" min="0" max="21" placeholder="4.1"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Sleep %</label><input type="number" id="whSleep" min="0" max="100" placeholder="82"></div>
+      <div><label>HRV (ms)</label><input type="number" id="whHrv" placeholder="46"></div>
+      <div><label>Resting HR (bpm)</label><input type="number" id="whRhr" placeholder="58"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Resp. Rate (rpm)</label><input type="number" step="0.1" id="whResp" placeholder="14.4"></div>
+      <div><label>SpO2 (%)</label><input type="number" id="whSpo2" placeholder="95"></div>
+      <div><label>Skin Temp (\u00b0F from baseline)</label><input type="number" step="0.1" id="whSkinTemp" placeholder="1.0"></div>
+    </div>
+    <button class="primary alt" id="addWhoopBtn">Log WHOOP Data</button>
+
+    <div class="table-wrap" style="margin-top:16px;">
+      <table id="whoopTable">
+        <thead><tr><th>Date</th><th>Recovery</th><th>Strain</th><th>Sleep</th><th>HRV</th><th>RHR</th><th>Resp</th><th>SpO2</th><th>Skin \u0394</th><th></th></tr></thead>
+        <tbody id="whoopBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-charts">
+    <div class="panel">
+      <h2>Athlete Profile &amp; Nutrition</h2>
+      <div class="profile-grid">
+        <div><label>Height (cm)</label><input type="number" id="pHeight" placeholder="183"></div>
+        <div><label>Weight (kg)</label><input type="number" id="pWeight" placeholder="76"></div>
+        <div><label>Age</label><input type="number" id="pAge" placeholder="34"></div>
+        <div><label>Sex</label>
+          <select id="pSex"><option value="male">Male</option><option value="female">Female</option></select>
+        </div>
+        <div><label>FTP (watts)</label><input type="number" id="pFtp" placeholder="220"></div>
+        <div><label>Max HR (bpm)</label><input type="number" id="pMaxHr" placeholder="186"></div>
+      </div>
+      <button class="ghost" id="saveProfileBtn" style="margin-top:10px;">Save Profile</button>
+
+      <div class="nutri-row" id="nutriCards"></div>
+      <div class="nutri-note" id="nutriNote"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Power &amp; Heart Rate Zones</h2>
+      <div class="zone-block">
+        <div class="zone-title">Power Zones (% FTP)</div>
+        <div id="powerZones"></div>
+      </div>
+      <div class="zone-block">
+        <div class="zone-title">Heart Rate Zones (% Max HR)</div>
+        <div id="hrZones"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Training Load (Duration &times; RPE)</h2>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">A rising trend without recovery weeks is the classic overreaching pattern &mdash; watch for it alongside your WHOOP recovery %.</div>
+    <canvas id="loadChart" height="130"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="st-header">
+      <h2 style="margin:0;">Strength Training</h2>
+      <select class="pill-select" id="stRange" onchange="renderStrength()">
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90" selected>Last 90 days</option>
+        <option value="9999">All time</option>
+      </select>
+    </div>
+
+    <div class="st-grid" id="stStats"></div>
+
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;">My Goals</div>
+    <div class="goal-row" id="goalRow"></div>
+
+    <div style="margin-top:20px;">
+      <canvas id="strengthTrendChart" height="130"></canvas>
+    </div>
+
+    <div class="table-wrap" style="margin-top:16px;">
+      <table id="liftTable">
+        <thead><tr><th>Date</th><th>Exercise</th><th>Weight</th><th>Sets \u00d7 Reps</th><th>Volume</th><th></th></tr></thead>
+        <tbody id="liftBody"></tbody>
+      </table>
+    </div>
+
+    <span class="mphase" style="margin-top:18px;">Log a Lift</span>
+    <div class="form-row three">
+      <div><label>Date</label><input type="date" id="lDate"></div>
+      <div><label>Exercise</label>
+        <select id="lExercise" onchange="document.getElementById('lCustom').style.display = this.value==='Other' ? 'block':'none';">
+          <option value="Squat">Squat</option>
+          <option value="Bench Press">Bench Press</option>
+          <option value="Deadlift">Deadlift</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div id="lCustom" style="display:none;"><label>Exercise Name</label><input type="text" id="lCustomName" placeholder="Overhead Press"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Weight (kg)</label><input type="number" step="0.5" id="lWeight" placeholder="100"></div>
+      <div><label>Sets</label><input type="number" id="lSets" placeholder="5"></div>
+      <div><label>Reps (per set)</label><input type="number" id="lReps" placeholder="5"></div>
+    </div>
+    <button class="primary" id="addLiftBtn">Log Lift</button>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h2>Workout Log</h2>
+      <div class="table-wrap">
+        <table id="logTable">
+          <thead><tr><th>Date</th><th>Sport</th><th>Duration</th><th>Distance</th><th>Pace</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="ghost" id="exportBtn">Export JSON</button>
+        <label class="ghost" style="cursor:pointer;display:inline-flex;align-items:center;">Import JSON
+          <input type="file" id="importFile" accept="application/json" style="display:none;">
+        </label>
+        <button class="ghost" id="resetBtn">Clear Manual Entries</button>
+      </div>
+
+      <span class="mphase" style="margin-top:18px;">Add Workout</span>
+      <div class="form-row">
+        <div><label>Date</label><input type="date" id="wDate"></div>
+        <div><label>Sport</label>
+          <select id="wSport" onchange="updateSportFields()">
+            <option value="Run">Run</option>
+            <option value="Bike">Bike</option>
+            <option value="Swim">Swim</option>
+            <option value="Strength">Strength</option>
+            <option value="Cross">Cross-training (soccer, etc.)</option>
+            <option value="Recovery">Recovery / Walk</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>Duration (min)</label><input type="number" id="wDuration" min="0" placeholder="45"></div>
+        <div><label>Distance (mi, optional)</label><input type="number" step="0.01" id="wDistance" placeholder="3.1"></div>
+      </div>
+      <div class="form-row">
+        <div><label>RPE (1-10)</label><input type="number" id="wRpe" min="1" max="10" placeholder="6"></div>
+        <div><label>Avg HR (bpm)</label><input type="number" id="wAvgHr" placeholder="148"></div>
+      </div>
+      <div class="form-row three sport-fields" id="fieldsBike">
+        <div><label>Avg Power (W)</label><input type="number" id="wPower" placeholder="210"></div>
+        <div><label>Cadence (rpm)</label><input type="number" id="wCadence" placeholder="88"></div>
+        <div><label>Elevation (ft)</label><input type="number" id="wElev" placeholder="450"></div>
+      </div>
+      <div class="form-row sport-fields active" id="fieldsRun">
+        <div><label>Cadence (spm)</label><input type="number" id="wRunCadence" placeholder="172"></div>
+        <div><label>Off-bike brick?</label>
+          <select id="wBrick"><option value="">No</option><option value="yes">Yes \u2014 ran off the bike</option></select>
+        </div>
+      </div>
+      <div class="form-row sport-fields" id="fieldsSwim">
+        <div><label>Pace /100m (mm:ss)</label><input type="text" id="wPace100" placeholder="1:52"></div>
+        <div><label>Stroke Rate (spm)</label><input type="number" id="wStrokeRate" placeholder="32"></div>
+      </div>
+      <div class="form-row full">
+        <div><label>Notes / Technique</label><input type="text" id="wNotes" placeholder="Easy aerobic, felt good"></div>
+      </div>
+      <button class="primary" id="addWorkoutBtn">Log Workout</button>
+    </div>
+
+    <div class="panel">
+      <h2>Milestones</h2>
+      <div id="milestoneList"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Runs fully offline &mdash; all data stored in this browser (localStorage). Export JSON regularly to back up or move between devices.</footer>
+
+<script>
+/* ---------------- PLAN DEFINITION ---------------- */
+const PHASE_DEFS = [
+  {key:'foundation', name:'Foundation', weeks:12, goal:'Build habit, swim technique, ease into bike & run volume'},
+  {key:'base', name:'Base Build', weeks:10, goal:'Extend duration, first bricks, real aerobic engine'},
+  {key:'build1', name:'Build 1', weeks:9, goal:'Race-pace work, swim to full distance'},
+  {key:'build2', name:'Build 2 / Peak', weeks:10, goal:'Longest sessions, race-specific bricks'},
+  {key:'taper', name:'Taper', weeks:3, goal:'Arrive fresh, not fit-and-fried'},
+];
+const MILESTONES = [
+  {phase:'Foundation', text:'Swim 500m continuous'},
+  {phase:'Foundation', text:'Bike 90 min easy'},
+  {phase:'Foundation', text:'Run 45 min continuous'},
+  {phase:'Base Build', text:'Swim 1000m'},
+  {phase:'Base Build', text:'Bike 2 hrs'},
+  {phase:'Base Build', text:'Run 60 min'},
+  {phase:'Base Build', text:'Comfortable with basic bricks'},
+  {phase:'Build 1', text:'Swim 1900m continuous (full race distance)'},
+  {phase:'Build 1', text:'Bike 3 hrs'},
+  {phase:'Build 1', text:'Run 75 min'},
+  {phase:'Build 2 / Peak', text:'Bike 3.5\u20134 hrs (56mi race pace practice)'},
+  {phase:'Build 2 / Peak', text:'Run 90 min'},
+  {phase:'Build 2 / Peak', text:'Completed a key long brick (bike + run off bike)'},
+  {phase:'Build 2 / Peak', text:'Tune-up race completed'},
+  {phase:'Taper', text:'Final long brick done 10\u201312 days out'},
+  {phase:'Taper', text:'Gear checked, race logistics confirmed'},
+];
+const DEFAULT_RACE_DATE = '2027-06-13';
+
+/* ---------------- SEED WHOOP (fallback if whoop.json absent) ---------------- */
+const SEED_WHOOP = [
+  {"date": "2026-07-19", "recovery": 28, "strain": 5.7, "sleepPerf": 33, "hrv": 36, "rhr": 60, "resp": 14.6, "spo2": 95.5, "skinTempC": 34.6, "asleepMin": 177, "sleepNeedMin": 443, "sleepDebtMin": 45, "sleepEff": 98, "deepMin": 57, "remMin": 44, "lightMin": 76, "calories": 2030, "avgHr": 73, "maxHr": 145},
+  {"date": "2026-07-20", "recovery": 39, "strain": 13.0, "sleepPerf": 70, "hrv": 28, "rhr": 66, "resp": 15.0, "spo2": 95.1, "skinTempC": 34.37, "asleepMin": 408, "sleepNeedMin": 515, "sleepDebtMin": 127, "sleepEff": 95, "deepMin": 115, "remMin": 91, "lightMin": 202, "calories": 1925, "avgHr": 78, "maxHr": 180},
+  {"date": "2026-07-21", "recovery": 15, "strain": 4.6, "sleepPerf": 32, "hrv": 23, "rhr": 67, "resp": 15.3, "spo2": 97.4, "skinTempC": 33.78, "asleepMin": 218, "sleepNeedMin": 548, "sleepDebtMin": 69, "sleepEff": 94, "deepMin": 87, "remMin": 54, "lightMin": 77, "calories": 1434, "avgHr": 72, "maxHr": 143},
+  {"date": "2026-07-22", "recovery": 54, "strain": 4.7, "sleepPerf": 70, "hrv": 38, "rhr": 61, "resp": 14.9, "spo2": 97.5, "skinTempC": 33.7, "asleepMin": 415, "sleepNeedMin": 585, "sleepDebtMin": 127, "sleepEff": 94, "deepMin": 110, "remMin": 112, "lightMin": 193, "calories": 1679, "avgHr": 69, "maxHr": 137},
+  {"date": "2026-07-23", "recovery": 16, "strain": 4.5, "sleepPerf": 26, "hrv": 31, "rhr": 62, "resp": 14.8, "spo2": 94.5, "skinTempC": 35.88, "asleepMin": 195, "sleepNeedMin": 566, "sleepDebtMin": 109, "sleepEff": 94, "deepMin": 83, "remMin": 35, "lightMin": 77, "calories": 1941, "avgHr": 70, "maxHr": 143},
+  {"date": "2026-07-24", "recovery": 83, "strain": 5.5, "sleepPerf": 67, "hrv": 44, "rhr": 60, "resp": 14.8, "spo2": 96.8, "skinTempC": 34.72, "asleepMin": 381, "sleepNeedMin": 585, "sleepDebtMin": 127, "sleepEff": 93, "deepMin": 88, "remMin": 98, "lightMin": 195, "calories": 1367, "avgHr": 68, "maxHr": 148},
+  {"date": "2026-07-25", "recovery": 60, "strain": 5.1, "sleepPerf": 60, "hrv": 37, "rhr": 62, "resp": 14.5, "spo2": 97.4, "skinTempC": 34.49, "asleepMin": 336, "sleepNeedMin": 585, "sleepDebtMin": 127, "sleepEff": 93, "deepMin": 78, "remMin": 103, "lightMin": 155, "calories": 1456, "avgHr": 75, "maxHr": 135},
+  {"date": "2026-07-26", "recovery": 39, "strain": 18.1, "sleepPerf": 35, "hrv": 40, "rhr": 60, "resp": 14.7, "spo2": 94.5, "skinTempC": 33.51, "asleepMin": 271, "sleepNeedMin": 642, "sleepDebtMin": 127, "sleepEff": 92, "deepMin": 130, "remMin": 46, "lightMin": 95, "calories": 3414, "avgHr": 79, "maxHr": 192},
+  {"date": "2026-07-27", "recovery": 59, "strain": 4.2, "sleepPerf": 76, "hrv": 35, "rhr": 62, "resp": 14.8, "spo2": 95.1, "skinTempC": 34.16, "asleepMin": 510, "sleepNeedMin": 512, "sleepDebtMin": 127, "sleepEff": 95, "deepMin": 154, "remMin": 135, "lightMin": 221, "calories": 1832, "avgHr": 67, "maxHr": 135},
+  {"date": "2026-07-28", "recovery": 52, "strain": 4.1, "sleepPerf": 68, "hrv": 37, "rhr": 64, "resp": 14.5, "spo2": 94.8, "skinTempC": 34.95, "asleepMin": 353, "sleepNeedMin": 530, "sleepDebtMin": 60, "sleepEff": 98, "deepMin": 112, "remMin": 91, "lightMin": 150, "calories": 2163, "avgHr": 68, "maxHr": 139},
+  {"date": "2026-07-30", "recovery": 93, "strain": 5.8, "sleepPerf": 79, "hrv": 45, "rhr": 58, "resp": 14.7, "spo2": 96.3, "skinTempC": 34.15, "asleepMin": 485, "sleepNeedMin": 431, "sleepDebtMin": 113, "sleepEff": 95, "deepMin": 122, "remMin": 111, "lightMin": 252, "calories": 1871, "avgHr": 66, "maxHr": 148},
+  {"date": "2026-07-31", "recovery": 67, "strain": 4.1, "sleepPerf": 82, "hrv": 39, "rhr": 61, "resp": 14.6, "spo2": 97.3, "skinTempC": 32.9, "asleepMin": 433, "sleepNeedMin": 458, "sleepDebtMin": 0, "sleepEff": 98, "deepMin": 129, "remMin": 123, "lightMin": 181, "calories": 1822, "avgHr": 67, "maxHr": 146},
+  {"date": "2026-08-01", "recovery": 32, "strain": 3.2, "sleepPerf": 80, "hrv": 28, "rhr": 65, "resp": 14.8, "spo2": 95.7, "skinTempC": 34.84, "asleepMin": 365, "sleepNeedMin": 473, "sleepDebtMin": 16, "sleepEff": 96, "deepMin": 119, "remMin": 121, "lightMin": 125, "calories": 1580, "avgHr": 67, "maxHr": 123},
+  {"date": "2026-08-02", "recovery": 89, "sleepPerf": 82, "hrv": 45, "rhr": 58, "resp": 14.4, "spo2": 94.9, "skinTempC": 34.96, "asleepMin": 616, "sleepNeedMin": 525, "sleepDebtMin": 68, "sleepEff": 92, "deepMin": 107, "remMin": 110, "lightMin": 399}
+];
+
+
+/* ---------------- SEED DATA (from Strava, pulled Aug 2 2026) ---------------- */
+const SEED_WORKOUTS = [
+  {date:'2026-07-30', sport:'Strength', duration:21, distance:null, notes:'Evening weight training'},
+  {date:'2026-07-28', sport:'Recovery', duration:22, distance:1.05, notes:'Afternoon walk'},
+  {date:'2026-07-28', sport:'Run', duration:23, distance:2.40, notes:'Afternoon run'},
+  {date:'2026-07-26', sport:'Cross', duration:121, distance:null, notes:'Morning soccer'},
+  {date:'2026-07-24', sport:'Strength', duration:20, distance:null, notes:'Night weight training'},
+  {date:'2026-07-22', sport:'Strength', duration:11, distance:null, notes:'Night weight training'},
+  {date:'2026-07-21', sport:'Recovery', duration:26, distance:null, notes:'Morning walk'},
+  {date:'2026-07-21', sport:'Run', duration:20, distance:null, notes:'Morning run'},
+  {date:'2026-07-16', sport:'Strength', duration:16, distance:null, notes:'Night weight training'},
+  {date:'2026-07-05', sport:'Strength', duration:18, distance:null, notes:'Night weight training'},
+  {date:'2026-07-02', sport:'Strength', duration:44, distance:null, notes:'Evening weight training'},
+  {date:'2026-06-26', sport:'Cross', duration:110, distance:null, notes:'Evening soccer'},
+  {date:'2026-06-26', sport:'Strength', duration:26, distance:null, notes:'Morning weight training'},
+  {date:'2026-06-25', sport:'Strength', duration:46, distance:null, notes:'Night weight training'},
+  {date:'2026-06-19', sport:'Strength', duration:66, distance:null, notes:'Night weight training'},
+  {date:'2026-06-10', sport:'Strength', duration:52, distance:null, notes:'Night weight training'},
+  {date:'2026-06-09', sport:'Cross', duration:114, distance:null, notes:'Evening soccer'},
+  {date:'2026-06-07', sport:'Cross', duration:116, distance:null, notes:'Morning soccer'},
+  {date:'2026-06-05', sport:'Strength', duration:19, distance:null, notes:'Afternoon weight training'},
+  {date:'2026-06-01', sport:'Run', duration:24, distance:2.87, notes:'Night run'},
+  {date:'2026-05-31', sport:'Strength', duration:38, distance:null, notes:'Night weight training'},
+  {date:'2026-05-30', sport:'Run', duration:29, distance:null, notes:'Evening run'},
+  {date:'2026-05-26', sport:'Run', duration:116, distance:null, notes:'Evening run'},
+  {date:'2026-05-25', sport:'Cross', duration:96, distance:null, notes:'Morning soccer'},
+  {date:'2026-05-20', sport:'Run', duration:25, distance:null, notes:'Afternoon run'},
+  {date:'2026-05-17', sport:'Cross', duration:123, distance:null, notes:'Morning soccer'},
+  {date:'2026-05-03', sport:'Cross', duration:138, distance:null, notes:'Morning soccer'},
+  {date:'2026-04-17', sport:'Cross', duration:55, distance:null, notes:'Evening soccer'},
+  {date:'2026-03-31', sport:'Cross', duration:103, distance:null, notes:'Evening soccer'},
+  {date:'2026-03-26', sport:'Cross', duration:66, distance:null, notes:'Night soccer'},
+];
+
+/* ---------------- STATE ----------------
+   Two layers of workout data:
+   - synced: pulled from workouts.json (Strava sync file), read-only, refreshed by re-uploading that one file
+   - manual: entries you add yourself in the browser, stored in localStorage
+   The two are merged for display. Deleting only affects manual entries. */
+const MANUAL_KEY = 'atlas703_manual_v1';
+const RACE_KEY = 'atlas703_racedate_v1';
+const MS_KEY = 'atlas703_milestones_v1';
+const SYNC_STATUS_KEY = 'atlas703_sync_status_v1';
+
+function loadManual(){
+  const raw = localStorage.getItem(MANUAL_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return []; } }
+  return [];
+}
+function saveManual(w){ localStorage.setItem(MANUAL_KEY, JSON.stringify(w)); }
+function loadRaceDate(){ return localStorage.getItem(RACE_KEY) || DEFAULT_RACE_DATE; }
+function saveRaceDate(d){ localStorage.setItem(RACE_KEY, d); }
+function loadMilestones(){
+  const raw = localStorage.getItem(MS_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return {}; } }
+  return {};
+}
+function saveMilestones(m){ localStorage.setItem(MS_KEY, JSON.stringify(m)); }
+
+const PROFILE_KEY = 'atlas703_profile_v1';
+const DEFAULT_PROFILE = {height:183, weight:76, age:34, sex:'male', ftp:null, maxHr:186};
+function loadProfile(){
+  const raw = localStorage.getItem(PROFILE_KEY);
+  if(raw){ try { return {...DEFAULT_PROFILE, ...JSON.parse(raw)}; } catch(e){ return {...DEFAULT_PROFILE}; } }
+  return {...DEFAULT_PROFILE};
+}
+function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+let profile = loadProfile();
+
+const LIFTS_KEY = 'atlas703_lifts_v1';
+const GOALS_KEY = 'atlas703_liftgoals_v1';
+const DEFAULT_GOALS = {Squat:140, 'Bench Press':100, Deadlift:180};
+function loadLifts(){
+  const raw = localStorage.getItem(LIFTS_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return []; } }
+  return [];
+}
+function saveLifts(l){ localStorage.setItem(LIFTS_KEY, JSON.stringify(l)); }
+function loadGoals(){
+  const raw = localStorage.getItem(GOALS_KEY);
+  if(raw){ try { return {...DEFAULT_GOALS, ...JSON.parse(raw)}; } catch(e){ return {...DEFAULT_GOALS}; } }
+  return {...DEFAULT_GOALS};
+}
+function saveGoals(g){ localStorage.setItem(GOALS_KEY, JSON.stringify(g)); }
+let lifts = loadLifts();
+let liftGoals = loadGoals();
+
+let syncedWorkouts = [];   // from workouts.json
+let manualWorkouts = loadManual();
+let workouts = [];         // combined view, rebuilt by rebuildWorkouts()
+let raceDate = loadRaceDate();
+let milestoneState = loadMilestones();
+let syncInfo = {ok:false, checkedAt:null};
+
+function rebuildWorkouts(){
+  workouts = syncedWorkouts.map(w=>({...w, source:'strava'}))
+    .concat(manualWorkouts.map(w=>({...w, source:'manual'})));
+}
+
+async function loadSyncedWorkouts(){
+  try{
+    const res = await fetch('workouts.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no workouts.json');
+    const data = await res.json();
+    syncedWorkouts = data.workouts || [];
+    syncInfo = {ok:true, checkedAt: new Date().toISOString(), syncedAt: data.syncedAt || null};
+  }catch(e){
+    // No workouts.json found (e.g. running locally via file://, or not uploaded yet) — fall back to seed data
+    syncedWorkouts = SEED_WORKOUTS.slice();
+    syncInfo = {ok:false, checkedAt: new Date().toISOString()};
+  }
+  rebuildWorkouts();
+}
+
+/* ---------------- WHOOP STATE ---------------- */
+const WHOOP_MANUAL_KEY = 'atlas703_whoop_manual_v1';
+function loadWhoopManual(){
+  const raw = localStorage.getItem(WHOOP_MANUAL_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return []; } }
+  return [];
+}
+function saveWhoopManual(w){ localStorage.setItem(WHOOP_MANUAL_KEY, JSON.stringify(w)); }
+let syncedWhoop = [];
+let manualWhoop = loadWhoopManual();
+let whoopEntries = [];
+function rebuildWhoop(){
+  const byDate = {};
+  syncedWhoop.forEach(w=> byDate[w.date] = {...w, source:'sync'});
+  manualWhoop.forEach(w=> byDate[w.date] = {...w, source:'manual'}); // manual overrides sync for same date
+  whoopEntries = Object.values(byDate).sort((a,b)=> new Date(a.date)-new Date(b.date));
+}
+async function loadSyncedWhoop(){
+  try{
+    const res = await fetch('whoop.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no whoop.json');
+    const data = await res.json();
+    syncedWhoop = data.entries || [];
+  }catch(e){
+    syncedWhoop = SEED_WHOOP.slice();
+  }
+  rebuildWhoop();
+}
+
+/* ---------------- PHASE MATH ---------------- */
+function computePhases(raceDateStr){
+  const totalWeeks = PHASE_DEFS.reduce((s,p)=>s+p.weeks,0);
+  const race = new Date(raceDateStr+'T00:00:00');
+  const planStart = new Date(race.getTime() - totalWeeks*7*86400000);
+  let cursor = new Date(planStart);
+  return PHASE_DEFS.map(p=>{
+    const start = new Date(cursor);
+    const end = new Date(cursor.getTime() + p.weeks*7*86400000 - 86400000);
+    cursor = new Date(cursor.getTime() + p.weeks*7*86400000);
+    return {...p, start, end};
+  });
+}
+function fmtDate(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+
+/* ---------------- GAUGE RENDERING (semicircle SVG) ---------------- */
+function gaugeSVG(value, max, zones, needleColor){
+  // value/max -> angle from -90deg (left) to +90deg (right) over 180deg arc
+  const pct = Math.max(0, Math.min(1, value/max));
+  const angle = -90 + pct*180;
+  const cx=100, cy=100, r=78;
+  function arcPath(startDeg, endDeg){
+    const toXY = deg => {
+      const rad = (deg-90) * Math.PI/180;
+      return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)];
+    };
+    const [x1,y1] = toXY(startDeg);
+    const [x2,y2] = toXY(endDeg);
+    const largeArc = (endDeg-startDeg) > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
+  }
+  let zoneArcs = '';
+  if(zones){
+    zones.forEach(z=>{
+      const a1 = -90 + (z.from/max)*180;
+      const a2 = -90 + (z.to/max)*180;
+      zoneArcs += `<path d="${arcPath(a1+90,a2+90)}" stroke="${z.color}" stroke-width="6" fill="none" opacity="0.55" stroke-linecap="round"/>`;
+    });
+  } else {
+    zoneArcs = `<path d="${arcPath(0,180)}" stroke="var(--line)" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  }
+  // ticks
+  let ticks = '';
+  for(let i=0;i<=10;i++){
+    const deg = -90 + i*18;
+    const rad = deg*Math.PI/180;
+    const x1 = cx + (r+8)*Math.cos(rad), y1 = cy + (r+8)*Math.sin(rad);
+    const x2 = cx + (r+2)*Math.cos(rad), y2 = cy + (r+2)*Math.sin(rad);
+    ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1.5" opacity="0.6"/>`;
+  }
+  const needleRad = (angle)*Math.PI/180;
+  const nx = cx + (r-10)*Math.cos(needleRad), ny = cy + (r-10)*Math.sin(needleRad);
+  return `<svg width="200" height="118" viewBox="0 0 200 112">
+    ${zoneArcs}
+    ${ticks}
+    <line class="needle" x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${needleColor}" stroke-width="3" stroke-linecap="round" style="transform:rotate(0deg);"/>
+    <circle cx="${cx}" cy="${cy}" r="4.5" fill="${needleColor}"/>
+  </svg>`;
+}
+
+function renderGauges(){
+  const phases = computePhases(raceDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const race = new Date(raceDate+'T00:00:00');
+  const planStart = phases[0].start;
+  const totalDays = daysBetween(planStart, phases[phases.length-1].end);
+  const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(planStart, today)));
+  const planPct = totalDays>0 ? (elapsedDays/totalDays*100) : 0;
+  const daysToRace = daysBetween(today, race);
+
+  // weekly compliance: sessions logged in last 7 days vs target (assume 4/week target)
+  const weekAgo = new Date(today.getTime()-7*86400000);
+  const thisWeekCount = workouts.filter(w=>{
+    const d = new Date(w.date+'T00:00:00');
+    return d>=weekAgo && d<=today && w.sport!=='Recovery';
+  }).length;
+  const targetPerWeek = 4;
+  const compliancePct = Math.min(100, (thisWeekCount/targetPerWeek)*100);
+
+  const cluster = document.getElementById('gaugeCluster');
+  const daysPct = Math.max(0, Math.min(100, 100 - (Math.max(0,daysToRace)/300*100)));
+  cluster.innerHTML = `
+    <div class="gauge-card">
+      <div class="ring-wrap">${ringSVG(daysPct, 'var(--cyan)', 130)}<div class="ring-value-abs gvalue mono">${daysToRace}</div></div>
+      <div class="glabel">Days to Race</div>
+      <div class="gsub">${fmtDate(race)}</div>
+    </div>
+    <div class="gauge-card">
+      <div class="ring-wrap">${ringSVG(planPct, 'var(--blue)', 130)}<div class="ring-value-abs gvalue mono">${planPct.toFixed(0)}%</div></div>
+      <div class="glabel">Plan Progress</div>
+      <div class="gsub">${phases.find(p=>today>=p.start&&today<=p.end)?.name || (today<planStart?'Not started':'Complete')}</div>
+    </div>
+    <div class="gauge-card">
+      <div class="ring-wrap">${ringSVG(compliancePct, recoveryColor(compliancePct), 130)}<div class="ring-value-abs gvalue mono">${thisWeekCount}/${targetPerWeek}</div></div>
+      <div class="glabel">This Week's Sessions</div>
+      <div class="gsub">${compliancePct.toFixed(0)}% of target</div>
+    </div>
+  `;
+}
+
+/* ---------------- TIMELINE ---------------- */
+function renderTimeline(){
+  const phases = computePhases(raceDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const el = document.getElementById('timeline');
+  el.innerHTML = phases.map(p=>{
+    let cls = '';
+    let barPct = 0;
+    if(today > p.end) { cls='done'; barPct=100; }
+    else if(today >= p.start && today <= p.end){ cls='active'; barPct = (daysBetween(p.start,today)/daysBetween(p.start,p.end))*100; }
+    return `<div class="phase ${cls}">
+      <div class="pname">${p.name}</div>
+      <div class="pdate">${fmtDate(p.start)} \u2192 ${fmtDate(p.end)}</div>
+      <div class="phase-bar"><div class="phase-bar-fill" style="width:${barPct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- MILESTONES ---------------- */
+function renderMilestones(){
+  const el = document.getElementById('milestoneList');
+  let html = '';
+  let lastPhase = null;
+  MILESTONES.forEach((m,i)=>{
+    if(m.phase !== lastPhase){ html += `<span class="mphase">${m.phase}</span>`; lastPhase = m.phase; }
+    const checked = milestoneState[i] ? 'checked' : '';
+    html += `<div class="milestone ${checked?'checked':''}">
+      <input type="checkbox" id="ms${i}" ${checked} onchange="toggleMilestone(${i})">
+      <label for="ms${i}">${m.text}</label>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+function toggleMilestone(i){
+  milestoneState[i] = !milestoneState[i];
+  saveMilestones(milestoneState);
+  renderMilestones();
+}
+
+/* ---------------- CHARTS ---------------- */
+let volumeChart, paceChart, distanceChart;
+const SPORT_COLOR = {Run:'#e8112d', Bike:'#ff6a3d', Swim:'#f5f5f6', Strength:'#9a9aa2', Cross:'#c81e3a'};
+
+function isoWeekLabel(d){
+  const date = new Date(d);
+  const jan1 = new Date(date.getFullYear(),0,1);
+  const week = Math.ceil((((date - jan1)/86400000) + jan1.getDay()+1)/7);
+  return `${date.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function buildWeeklyVolume(){
+  const buckets = {};
+  workouts.forEach(w=>{
+    if(w.sport==='Recovery') return;
+    const wk = isoWeekLabel(w.date);
+    buckets[wk] = buckets[wk] || {Run:0,Bike:0,Swim:0,Strength:0,Cross:0};
+    buckets[wk][w.sport] += (w.duration||0)/60;
+  });
+  const weeks = Object.keys(buckets).sort();
+  return {weeks, buckets};
+}
+
+function renderVolumeChart(){
+  const {weeks, buckets} = buildWeeklyVolume();
+  const sports = ['Run','Bike','Swim','Strength','Cross'];
+  const datasets = sports.map(s=>({
+    label:s, backgroundColor:SPORT_COLOR[s],
+    data: weeks.map(w=>+(buckets[w][s]||0).toFixed(2))
+  }));
+  if(volumeChart) volumeChart.destroy();
+  volumeChart = new Chart(document.getElementById('volumeChart'), {
+    type:'bar',
+    data:{labels:weeks, datasets},
+    options:{
+      responsive:true,
+      scales:{
+        x:{stacked:true, ticks:{color:'#9a9aa2',font:{size:10}}, grid:{color:'#2e2e34'}},
+        y:{stacked:true, ticks:{color:'#9a9aa2'}, grid:{color:'#2e2e34'}, title:{display:true,text:'hours',color:'#9a9aa2'}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:11}}}}
+    }
+  });
+}
+
+function renderPaceChart(){
+  const runs = workouts.filter(w=>w.sport==='Run' && w.distance && w.duration)
+    .map(w=>({date:w.date, pace: w.duration / w.distance}))
+    .sort((a,b)=> new Date(a.date)-new Date(b.date));
+  if(paceChart) paceChart.destroy();
+  paceChart = new Chart(document.getElementById('paceChart'), {
+    type:'line',
+    data:{
+      labels: runs.map(r=>r.date),
+      datasets:[{
+        label:'Pace (min/mi)',
+        data: runs.map(r=>+r.pace.toFixed(2)),
+        borderColor:'#e8112d', backgroundColor:'rgba(232,17,45,0.15)',
+        tension:0.3, fill:true, pointRadius:4, pointBackgroundColor:'#22e8d4'
+      }]
+    },
+    options:{
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:10}}, grid:{color:'#2e2e34'}},
+        y:{reverse:false, ticks:{color:'#9a9aa2'}, grid:{color:'#2e2e34'}, title:{display:true,text:'min/mi',color:'#9a9aa2'}}
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
+  if(runs.length===0){
+    document.getElementById('paceChart').insertAdjacentHTML('afterend','');
+  }
+}
+
+function renderDistanceChart(){
+  const buckets = {};
+  workouts.forEach(w=>{
+    if(!w.distance || (w.sport!=='Run' && w.sport!=='Bike' && w.sport!=='Swim')) return;
+    const wk = isoWeekLabel(w.date);
+    buckets[wk] = buckets[wk] || {Run:0,Bike:0,Swim:0};
+    buckets[wk][w.sport] += w.distance;
+  });
+  const weeks = Object.keys(buckets).sort();
+  const sports = ['Run','Bike','Swim'];
+  const datasets = sports.map(s=>({
+    label:s, borderColor:SPORT_COLOR[s], backgroundColor:SPORT_COLOR[s],
+    data: weeks.map(w=>+(buckets[w][s]||0).toFixed(2)), tension:0.3, pointRadius:3
+  }));
+  if(distanceChart) distanceChart.destroy();
+  distanceChart = new Chart(document.getElementById('distanceChart'), {
+    type:'line',
+    data:{labels:weeks, datasets},
+    options:{
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:10}}, grid:{color:'#2e2e34'}},
+        y:{ticks:{color:'#9a9aa2'}, grid:{color:'#2e2e34'}, title:{display:true,text:'miles',color:'#9a9aa2'}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:11}}}}
+    }
+  });
+}
+
+/* ---------------- LOG TABLE ---------------- */
+function tagClass(sport){
+  return {Run:'tag-run',Bike:'tag-bike',Swim:'tag-swim',Strength:'tag-strength',Cross:'tag-cross',Recovery:'tag-recovery'}[sport] || 'tag-recovery';
+}
+function renderLogTable(){
+  const body = document.getElementById('logBody');
+  const sorted = workouts.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(sorted.length===0){ body.innerHTML = `<tr><td colspan="7"><div class="empty">No workouts logged yet.</div></td></tr>`; return; }
+  body.innerHTML = sorted.map((w,idx)=>{
+    const realIdx = workouts.indexOf(w);
+    const pace = (w.sport==='Run' && w.distance) ? (w.duration/w.distance).toFixed(2)+' /mi' : '\u2014';
+    const delBtn = w.source==='manual' ? `<button class="del-btn" onclick="deleteWorkout(${realIdx})">&times;</button>` : `<span class="mono" style="color:var(--muted);font-size:11px;" title="From workouts.json">\u2713</span>`;
+    const badges = [];
+    if(w.rpe) badges.push(`RPE ${w.rpe}`);
+    if(w.avgHr) badges.push(`${w.avgHr} bpm`);
+    if(w.power) badges.push(`${w.power}W`);
+    if(w.cadence) badges.push(`${w.cadence}rpm`);
+    if(w.elevation) badges.push(`+${w.elevation}ft`);
+    if(w.runCadence) badges.push(`${w.runCadence}spm`);
+    if(w.brick) badges.push(`brick`);
+    if(w.pace100) badges.push(`${w.pace100}/100m`);
+    if(w.strokeRate) badges.push(`${w.strokeRate}spm`);
+    const badgeHtml = badges.length ? `<div class="badge-row">${badges.map(b=>`<span class="badge">${b}</span>`).join('')}</div>` : '';
+    return `<tr>
+      <td class="mono">${w.date}</td>
+      <td><span class="tag ${tagClass(w.sport)}">${w.sport}</span></td>
+      <td class="mono">${w.duration ? w.duration+' min' : '\u2014'}</td>
+      <td class="mono">${w.distance ? w.distance+' mi' : '\u2014'}</td>
+      <td class="mono">${pace}</td>
+      <td>${w.notes||''}${badgeHtml}</td>
+      <td>${delBtn}</td>
+    </tr>`;
+  }).join('');
+}
+function deleteWorkout(idx){
+  const w = workouts[idx];
+  if(w.source !== 'manual'){ alert('This entry came from workouts.json (Strava sync). Delete it by re-uploading an updated workouts.json instead.'); return; }
+  const manualIdx = manualWorkouts.findIndex(m => m.date===w.date && m.sport===w.sport && m.duration===w.duration && m.notes===w.notes);
+  if(manualIdx > -1) manualWorkouts.splice(manualIdx,1);
+  saveManual(manualWorkouts);
+  rebuildWorkouts();
+  renderAll();
+}
+
+/* ---------------- SPORT-SPECIFIC FORM FIELDS ---------------- */
+function updateSportFields(){
+  const sport = document.getElementById('wSport').value;
+  document.getElementById('fieldsBike').classList.toggle('active', sport==='Bike');
+  document.getElementById('fieldsRun').classList.toggle('active', sport==='Run');
+  document.getElementById('fieldsSwim').classList.toggle('active', sport==='Swim');
+}
+
+/* ---------------- PROFILE, CALORIES & NUTRITION ---------------- */
+function calcBMR(p){
+  // Mifflin-St Jeor
+  const s = p.sex==='female' ? -161 : 5;
+  return 10*p.weight + 6.25*p.height - 5*p.age + s;
+}
+const SPORT_MET = {Run:10, Bike:8, Swim:8, Strength:5, Cross:7, Recovery:2.5};
+function estimateSessionCalories(w, weightKg){
+  if(w.calories) return w.calories;
+  const met = SPORT_MET[w.sport] || 6;
+  return Math.round(met * 3.5 * weightKg / 200 * (w.duration||0));
+}
+function renderNutrition(){
+  const bmr = calcBMR(profile);
+  const maintenance = bmr * 1.375; // light daily activity baseline, training added on top
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todaysWorkouts = workouts.filter(w=>w.date===todayStr && w.sport!=='Recovery');
+  const trainingCals = todaysWorkouts.reduce((sum,w)=> sum + estimateSessionCalories(w, profile.weight), 0);
+  const target = Math.round(maintenance + trainingCals);
+  const totalMinToday = todaysWorkouts.reduce((s,w)=>s+(w.duration||0),0);
+  const isHardDay = totalMinToday >= 60;
+  const carbLow = Math.round(profile.weight * (isHardDay?6:3));
+  const carbHigh = Math.round(profile.weight * (isHardDay?10:5));
+  const proteinG = Math.round(profile.weight * 1.6);
+
+  document.getElementById('nutriCards').innerHTML = `
+    <div class="nutri-card"><div class="nlabel">BMR</div><div class="nval">${Math.round(bmr)}<span class="nunit"> kcal</span></div></div>
+    <div class="nutri-card"><div class="nlabel">Maintenance</div><div class="nval">${Math.round(maintenance)}<span class="nunit"> kcal</span></div></div>
+    <div class="nutri-card" style="border-color:var(--cyan);"><div class="nlabel">Today's Target</div><div class="nval" style="color:var(--cyan);">${target}<span class="nunit"> kcal</span></div></div>
+    <div class="nutri-card"><div class="nlabel">Carb Target</div><div class="nval">${carbLow}\u2013${carbHigh}<span class="nunit"> g</span></div></div>
+    <div class="nutri-card"><div class="nlabel">Protein Target</div><div class="nval">${proteinG}<span class="nunit"> g</span></div></div>
+  `;
+  document.getElementById('nutriNote').innerHTML = todaysWorkouts.length
+    ? `${todaysWorkouts.length} session(s) logged today (~${totalMinToday} min) \u2014 ${isHardDay?'treated as a hard/long day, carb target set higher':'treated as a light day'}. Training calories (~${trainingCals} kcal) are estimated from duration when a session doesn't have logged calories \u2014 exact numbers from WHOOP/Strava will be more accurate than the estimate.`
+    : `No sessions logged today yet \u2014 target shown is your maintenance baseline. Log today's workout to see it adjust upward.`;
+}
+
+/* ---------------- POWER & HR ZONES ---------------- */
+const POWER_ZONES = [
+  {z:'Z1', label:'Active Recovery', from:0, to:55, color:'#9a9aa2'},
+  {z:'Z2', label:'Endurance', from:56, to:75, color:'#f5f5f6'},
+  {z:'Z3', label:'Tempo', from:76, to:90, color:'#ff6a3d'},
+  {z:'Z4', label:'Threshold', from:91, to:105, color:'#e8112d'},
+  {z:'Z5', label:'VO2 Max+', from:106, to:150, color:'#8a1c2b'},
+];
+const HR_ZONES = [
+  {z:'Z1', label:'Active Recovery', from:50, to:60, color:'#9a9aa2'},
+  {z:'Z2', label:'Endurance', from:60, to:70, color:'#f5f5f6'},
+  {z:'Z3', label:'Tempo', from:70, to:80, color:'#ff6a3d'},
+  {z:'Z4', label:'Threshold', from:80, to:90, color:'#e8112d'},
+  {z:'Z5', label:'VO2 Max', from:90, to:100, color:'#8a1c2b'},
+];
+function renderZones(){
+  const ftp = profile.ftp;
+  const powerHtml = !ftp ? `<div class="empty">Set your FTP above to see personalized power zones.</div>` :
+    POWER_ZONES.map(z=>{
+      const lo = Math.round(ftp*z.from/100), hi = z.to>=150 ? '\u221e' : Math.round(ftp*z.to/100);
+      return `<div class="zone-row"><span class="zone-swatch" style="background:${z.color};"></span><span class="zone-name">${z.z}</span><span class="zone-range mono">${lo}\u2013${hi}W</span><span class="zone-desc">${z.label}</span></div>`;
+    }).join('');
+  document.getElementById('powerZones').innerHTML = powerHtml;
+
+  const maxHr = profile.maxHr;
+  const hrHtml = !maxHr ? `<div class="empty">Set your Max HR above to see personalized HR zones.</div>` :
+    HR_ZONES.map(z=>{
+      const lo = Math.round(maxHr*z.from/100), hi = Math.round(maxHr*z.to/100);
+      return `<div class="zone-row"><span class="zone-swatch" style="background:${z.color};"></span><span class="zone-name">${z.z}</span><span class="zone-range mono">${lo}\u2013${hi} bpm</span><span class="zone-desc">${z.label}</span></div>`;
+    }).join('');
+  document.getElementById('hrZones').innerHTML = hrHtml;
+}
+
+/* ---------------- TRAINING LOAD (sRPE) ---------------- */
+let loadChart;
+function renderLoadChart(){
+  const buckets = {};
+  workouts.forEach(w=>{
+    if(!w.rpe || !w.duration) return;
+    const wk = isoWeekLabel(w.date);
+    buckets[wk] = (buckets[wk]||0) + w.rpe*w.duration;
+  });
+  const weeks = Object.keys(buckets).sort();
+  if(loadChart) loadChart.destroy();
+  loadChart = new Chart(document.getElementById('loadChart'), {
+    type:'bar',
+    data:{labels:weeks, datasets:[{label:'Weekly Load (min \u00d7 RPE)', data:weeks.map(w=>Math.round(buckets[w])), backgroundColor:'#e8112d'}]},
+    options:{
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:10}}, grid:{color:'#2e2e34'}},
+        y:{ticks:{color:'#9a9aa2'}, grid:{color:'#2e2e34'}, title:{display:true,text:'a.u.',color:'#9a9aa2'}}
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+/* ---------------- STRENGTH TRAINING ---------------- */
+function liftVolume(l){ return (l.weight||0) * (l.reps||0) * (l.sets||0); }
+function filterLiftsInRange(days){
+  if(days >= 9999) return lifts.slice();
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-days); cutoff.setHours(0,0,0,0);
+  return lifts.filter(l => new Date(l.date+'T00:00:00') >= cutoff);
+}
+function strengthTimeMinutes(days){
+  // pulls duration from Strength-tagged entries in the main workout log
+  const cutoff = days>=9999 ? null : (()=>{ const d=new Date(); d.setDate(d.getDate()-days); d.setHours(0,0,0,0); return d; })();
+  return workouts.filter(w=>w.sport==='Strength' && (!cutoff || new Date(w.date+'T00:00:00')>=cutoff))
+    .reduce((s,w)=>s+(w.duration||0),0);
+}
+function pctDelta(curr, prev){
+  if(prev===0) return curr>0 ? 100 : 0;
+  return Math.round((curr-prev)/prev*100);
+}
+function renderStrength(){
+  const days = parseInt(document.getElementById('stRange').value, 10);
+  const curr = filterLiftsInRange(days);
+  const prevAll = days>=9999 ? [] : (()=>{
+    const cutoffEnd = new Date(); cutoffEnd.setDate(cutoffEnd.getDate()-days); cutoffEnd.setHours(0,0,0,0);
+    const cutoffStart = new Date(); cutoffStart.setDate(cutoffStart.getDate()-days*2); cutoffStart.setHours(0,0,0,0);
+    return lifts.filter(l=>{ const d=new Date(l.date+'T00:00:00'); return d>=cutoffStart && d<cutoffEnd; });
+  })();
+
+  const workoutDates = new Set(curr.map(l=>l.date)).size;
+  const prevWorkoutDates = new Set(prevAll.map(l=>l.date)).size;
+  const totalVolume = curr.reduce((s,l)=>s+liftVolume(l),0);
+  const prevVolume = prevAll.reduce((s,l)=>s+liftVolume(l),0);
+  const totalReps = curr.reduce((s,l)=>s+(l.reps||0)*(l.sets||0),0);
+  const prevReps = prevAll.reduce((s,l)=>s+(l.reps||0)*(l.sets||0),0);
+  const totalSets = curr.reduce((s,l)=>s+(l.sets||0),0);
+  const prevSets = prevAll.reduce((s,l)=>s+(l.sets||0),0);
+  const heaviest = curr.reduce((m,l)=>Math.max(m,l.weight||0),0);
+  const prevHeaviest = prevAll.reduce((m,l)=>Math.max(m,l.weight||0),0);
+  const timeMin = strengthTimeMinutes(days);
+  const prevTimeMin = days>=9999 ? 0 : (strengthTimeMinutes(days*2) - timeMin);
+
+  const stats = [
+    {label:'Workouts', val:workoutDates, delta:workoutDates-prevWorkoutDates, pct:pctDelta(workoutDates,prevWorkoutDates), color:'var(--cyan)'},
+    {label:'Lifted', val:(totalVolume/1000).toFixed(1)+' t', delta:((totalVolume-prevVolume)/1000).toFixed(1)+' t', pct:pctDelta(totalVolume,prevVolume), color:'var(--purple)'},
+    {label:'Reps', val:totalReps, delta:totalReps-prevReps, pct:pctDelta(totalReps,prevReps), color:'var(--blue)'},
+    {label:'Sets', val:totalSets, delta:totalSets-prevSets, pct:pctDelta(totalSets,prevSets), color:'var(--amber)'},
+    {label:'Heaviest', val:heaviest+' kg', delta:(heaviest-prevHeaviest)+' kg', pct:pctDelta(heaviest,prevHeaviest), color:'var(--red)'},
+    {label:'Time', val:(timeMin/60).toFixed(1)+' h', delta:((timeMin-prevTimeMin)/60).toFixed(1)+' h', pct:pctDelta(timeMin,prevTimeMin), color:'var(--yellow)'},
+  ];
+  document.getElementById('stStats').innerHTML = stats.map(s=>{
+    const dir = s.pct >= 0 ? 'up' : 'down';
+    const arrow = s.pct >= 0 ? '+' : '';
+    return `<div class="st-stat">
+      <span class="swatch-square" style="background:${s.color};"></span>
+      <div><div class="slabel">${s.label}: <span class="sval">${s.val}</span></div>
+      <div class="sdelta ${dir}">${arrow}${s.delta}/${arrow}${s.pct}%</div></div>
+    </div>`;
+  }).join('');
+
+  // Goal rings: best-ever logged weight per lift vs goal
+  const bestByLift = {};
+  lifts.forEach(l=>{ bestByLift[l.exercise] = Math.max(bestByLift[l.exercise]||0, l.weight||0); });
+  const goalHtml = Object.keys(liftGoals).map(name=>{
+    const best = bestByLift[name] || 0;
+    const goal = liftGoals[name];
+    const pct = goal>0 ? Math.min(100, Math.round(best/goal*100)) : 0;
+    return `<div class="goal-card">
+      <div class="ring-wrap">${ringSVG(pct, 'var(--cyan)', 100)}<div class="ring-value-abs rvalue mono" style="color:var(--cyan);font-size:16px;">${pct}%</div></div>
+      <div class="glift">${name}</div>
+      <div class="gcurrent">${best} / ${goal} kg</div>
+      <input type="number" value="${goal}" onchange="updateGoal('${name}', this.value)">
+    </div>`;
+  }).join('');
+  document.getElementById('goalRow').innerHTML = goalHtml;
+
+  renderStrengthTrendChart();
+  renderLiftTable();
+}
+function updateGoal(name, value){
+  liftGoals[name] = parseFloat(value) || liftGoals[name];
+  saveGoals(liftGoals);
+  renderStrength();
+}
+
+let strengthTrendChart;
+function renderStrengthTrendChart(){
+  const sorted = lifts.slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const dates = [...new Set(sorted.map(l=>l.date))];
+  let cumWorkouts = 0, cumVolume = 0;
+  const workoutSeries = [], volumeSeries = [];
+  dates.forEach(d=>{
+    cumWorkouts += 1;
+    cumVolume += sorted.filter(l=>l.date===d).reduce((s,l)=>s+liftVolume(l),0);
+    workoutSeries.push(cumWorkouts);
+    volumeSeries.push(+(cumVolume/1000).toFixed(2));
+  });
+  if(strengthTrendChart) strengthTrendChart.destroy();
+  strengthTrendChart = new Chart(document.getElementById('strengthTrendChart'), {
+    type:'line',
+    data:{labels:dates, datasets:[
+      {label:'Cumulative Workouts', data:workoutSeries, borderColor:'#e8112d', backgroundColor:'rgba(232,17,45,0.1)', tension:0.3, fill:true, pointRadius:0, yAxisID:'y'},
+      {label:'Cumulative Tonnage (t)', data:volumeSeries, borderColor:'#9a9aa2', backgroundColor:'transparent', tension:0.3, pointRadius:0, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:9},maxTicksLimit:8}, grid:{color:'#2e2e34'}},
+        y:{position:'left', ticks:{color:'#e8112d',font:{size:10}}, grid:{color:'#2e2e34'}},
+        y1:{position:'right', ticks:{color:'#9a9aa2',font:{size:10}}, grid:{drawOnChartArea:false}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:10},boxWidth:12}}}
+    }
+  });
+}
+
+function renderLiftTable(){
+  const body = document.getElementById('liftBody');
+  const sorted = lifts.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(sorted.length===0){ body.innerHTML = `<tr><td colspan="6"><div class="empty">No lifts logged yet.</div></td></tr>`; return; }
+  body.innerHTML = sorted.map((l)=>{
+    const realIdx = lifts.indexOf(l);
+    return `<tr>
+      <td class="mono">${l.date}</td>
+      <td>${l.exercise}</td>
+      <td class="mono">${l.weight} kg</td>
+      <td class="mono">${l.sets}\u00d7${l.reps}</td>
+      <td class="mono">${liftVolume(l).toLocaleString()} kg</td>
+      <td><button class="del-btn" onclick="deleteLift(${realIdx})">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+function deleteLift(idx){
+  lifts.splice(idx,1);
+  saveLifts(lifts);
+  renderStrength();
+}
+document.getElementById('addLiftBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('lDate').value;
+  const exSelect = document.getElementById('lExercise').value;
+  const exercise = exSelect==='Other' ? (document.getElementById('lCustomName').value || 'Other') : exSelect;
+  const weight = parseFloat(document.getElementById('lWeight').value) || 0;
+  const sets = parseFloat(document.getElementById('lSets').value) || 0;
+  const reps = parseFloat(document.getElementById('lReps').value) || 0;
+  if(!date || !weight){ alert('Pick a date and enter a weight.'); return; }
+  lifts.push({date, exercise, weight, sets, reps});
+  saveLifts(lifts);
+  document.getElementById('lWeight').value='';
+  document.getElementById('lSets').value='';
+  document.getElementById('lReps').value='';
+  renderStrength();
+});
+
+function initProfileForm(){
+  document.getElementById('pHeight').value = profile.height ?? '';
+  document.getElementById('pWeight').value = profile.weight ?? '';
+  document.getElementById('pAge').value = profile.age ?? '';
+  document.getElementById('pSex').value = profile.sex ?? 'male';
+  document.getElementById('pFtp').value = profile.ftp ?? '';
+  document.getElementById('pMaxHr').value = profile.maxHr ?? '';
+}
+document.getElementById('saveProfileBtn').addEventListener('click', ()=>{
+  profile = {
+    height: parseFloat(document.getElementById('pHeight').value) || DEFAULT_PROFILE.height,
+    weight: parseFloat(document.getElementById('pWeight').value) || DEFAULT_PROFILE.weight,
+    age: parseFloat(document.getElementById('pAge').value) || DEFAULT_PROFILE.age,
+    sex: document.getElementById('pSex').value,
+    ftp: parseFloat(document.getElementById('pFtp').value) || null,
+    maxHr: parseFloat(document.getElementById('pMaxHr').value) || null,
+  };
+  saveProfile(profile);
+  renderNutrition();
+  renderZones();
+});
+
+/* ---------------- ADD WORKOUT / EXPORT / IMPORT ---------------- */
+document.getElementById('addWorkoutBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('wDate').value;
+  const sport = document.getElementById('wSport').value;
+  const duration = parseFloat(document.getElementById('wDuration').value) || null;
+  const distance = parseFloat(document.getElementById('wDistance').value) || null;
+  const notes = document.getElementById('wNotes').value;
+  const rpe = parseFloat(document.getElementById('wRpe').value) || null;
+  const avgHr = parseFloat(document.getElementById('wAvgHr').value) || null;
+  const entry = {date, sport, duration, distance, notes, rpe, avgHr};
+  if(sport==='Bike'){
+    entry.power = parseFloat(document.getElementById('wPower').value) || null;
+    entry.cadence = parseFloat(document.getElementById('wCadence').value) || null;
+    entry.elevation = parseFloat(document.getElementById('wElev').value) || null;
+  } else if(sport==='Run'){
+    entry.runCadence = parseFloat(document.getElementById('wRunCadence').value) || null;
+    entry.brick = document.getElementById('wBrick').value === 'yes';
+  } else if(sport==='Swim'){
+    entry.pace100 = document.getElementById('wPace100').value || null;
+    entry.strokeRate = parseFloat(document.getElementById('wStrokeRate').value) || null;
+  }
+  if(!date){ alert('Pick a date first.'); return; }
+  manualWorkouts.push(entry);
+  saveManual(manualWorkouts);
+  rebuildWorkouts();
+  ['wDuration','wDistance','wNotes','wRpe','wAvgHr','wPower','wCadence','wElev','wRunCadence','wPace100','wStrokeRate'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  renderAll();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const payload = {manualWorkouts, raceDate, milestones: milestoneState, exportedAt: new Date().toISOString()};
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'atlas703-dashboard-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(data.manualWorkouts) manualWorkouts = data.manualWorkouts;
+      else if(data.workouts) manualWorkouts = data.workouts.filter(w=>w.source!=='strava');
+      if(data.raceDate) raceDate = data.raceDate;
+      if(data.milestones) milestoneState = data.milestones;
+      saveManual(manualWorkouts); saveRaceDate(raceDate); saveMilestones(milestoneState);
+      rebuildWorkouts();
+      renderAll();
+      alert('Import complete.');
+    }catch(err){ alert('Could not read that file: '+err.message); }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('Clear all manually-added workouts? Strava-synced data (from workouts.json) is not affected.')) return;
+  manualWorkouts = [];
+  saveManual(manualWorkouts);
+  rebuildWorkouts();
+  renderAll();
+});
+
+document.getElementById('saveRaceDate').addEventListener('click', ()=>{
+  const val = document.getElementById('raceDateInput').value;
+  if(!val){ return; }
+  raceDate = val;
+  saveRaceDate(raceDate);
+  renderAll();
+});
+
+/* ---------------- WHOOP RENDERING ---------------- */
+function ringSVG(pct, color, size){
+  size = size || 92;
+  const r = 38, c = 2*Math.PI*r;
+  const clamped = Math.max(0, Math.min(100, pct||0));
+  const dash = (clamped/100)*c;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--line)" stroke-width="8"/>
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="8"
+      stroke-dasharray="${dash} ${c}" stroke-linecap="round"
+      transform="rotate(-90 50 50)" style="filter:drop-shadow(0 0 6px ${color});"/>
+  </svg>`;
+}
+function recoveryColor(v){
+  if(v == null) return 'var(--muted)';
+  if(v >= 67) return 'var(--green)';
+  if(v >= 34) return 'var(--amber)';
+  return 'var(--red)';
+}
+function fmtMin(m){
+  if(m == null) return '\u2014';
+  const h = Math.floor(m/60), mm = m%60;
+  return `${h}:${String(mm).padStart(2,'0')}`;
+}
+function cToFDelta(c, baseline){
+  if(c == null) return null;
+  // express as delta in F from the trailing baseline of available data
+  return (c - baseline) * 9/5;
+}
+
+function avgField(entries, field){
+  const vals = entries.map(e=>e[field]).filter(v=>v!=null);
+  if(!vals.length) return null;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+
+function renderWhoopRings(){
+  const el = document.getElementById('whoopRings');
+  const labelEl = document.getElementById('whoopAvgLabel');
+  if(!whoopEntries.length){ el.innerHTML = '<div class="empty">No WHOOP data yet.</div>'; if(labelEl) labelEl.textContent=''; return; }
+  if(labelEl) labelEl.textContent = `Averaged across ${whoopEntries.length} days of synced data (${whoopEntries[0].date} \u2192 ${whoopEntries[whoopEntries.length-1].date})`;
+  const avgSleep = avgField(whoopEntries, 'sleepPerf');
+  const avgRecovery = avgField(whoopEntries, 'recovery');
+  const avgStrain = avgField(whoopEntries, 'strain');
+  const strainPct = avgStrain != null ? (avgStrain/21)*100 : 0;
+  el.innerHTML = `
+    <div class="ring-card">
+      <div class="ring-wrap">${ringSVG(avgSleep, 'var(--blue)', 110)}<div class="ring-value-abs rvalue mono" style="color:var(--blue);">${avgSleep!=null?Math.round(avgSleep)+'%':'\u2014'}</div></div>
+      <div class="rlabel">Sleep</div>
+    </div>
+    <div class="ring-card">
+      <div class="ring-wrap">${ringSVG(avgRecovery, recoveryColor(avgRecovery), 110)}<div class="ring-value-abs rvalue mono" style="color:${recoveryColor(avgRecovery)};">${avgRecovery!=null?Math.round(avgRecovery)+'%':'\u2014'}</div></div>
+      <div class="rlabel">Recovery</div>
+    </div>
+    <div class="ring-card">
+      <div class="ring-wrap">${ringSVG(strainPct, 'var(--purple)', 110)}<div class="ring-value-abs rvalue mono" style="color:var(--purple-bright);">${avgStrain!=null?avgStrain.toFixed(1):'\u2014'}</div></div>
+      <div class="rlabel">Strain</div>
+    </div>
+  `;
+}
+
+function renderWhoopStats(){
+  const el = document.getElementById('whoopStats');
+  if(!whoopEntries.length){ el.innerHTML = ''; return; }
+  const avgSkinC = avgField(whoopEntries, 'skinTempC');
+  const avgSkinF = avgSkinC != null ? (avgSkinC*9/5+32) : null;
+  const r = (v) => v!=null ? Math.round(v) : null;
+  const cards = [
+    {label:'HRV', val: r(avgField(whoopEntries,'hrv')), unit:'ms', color:'var(--cyan)'},
+    {label:'Resting HR', val: r(avgField(whoopEntries,'rhr')), unit:'bpm', color:'var(--red)'},
+    {label:'Resp. Rate', val: r(avgField(whoopEntries,'resp')), unit:'rpm', color:'var(--blue)'},
+    {label:'SpO\u2082', val: r(avgField(whoopEntries,'spo2')), unit:'%', color:'var(--green)'},
+    {label:'Skin Temp', val: avgSkinF!=null ? Math.round(avgSkinF) : null, unit:'\u00b0F', color:'var(--amber)'},
+    {label:'Sleep', val: (()=>{ const m=avgField(whoopEntries,'asleepMin'); return m!=null?fmtMin(Math.round(m)):null; })(), unit:'hrs', color:'var(--purple-bright)'},
+    {label:'Sleep Debt', val: (()=>{ const m=avgField(whoopEntries,'sleepDebtMin'); return m!=null?fmtMin(Math.round(m)):null; })(), unit:'hrs', color:'var(--slate)'},
+    {label:'Calories', val: r(avgField(whoopEntries,'calories')), unit:'cal', color:'var(--amber)'},
+  ];
+  el.innerHTML = cards.map(c=>`
+    <div class="stat-mini">
+      <div class="slabel">${c.label}</div>
+      <div class="sval" style="color:${c.color};">${c.val!=null?c.val:'\u2014'}<span class="unit">${c.val!=null?c.unit:''}</span></div>
+    </div>`).join('');
+}
+
+let whoopTrendChart, whoopHrvChart;
+function renderWhoopCharts(){
+  const recent = whoopEntries.slice(-30);
+  const labels = recent.map(e=>e.date.slice(5));
+
+  if(whoopTrendChart) whoopTrendChart.destroy();
+  whoopTrendChart = new Chart(document.getElementById('whoopTrendChart'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Recovery %', data:recent.map(e=>e.recovery), borderColor:'#e8112d', backgroundColor:'rgba(52,216,163,0.12)',
+       tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
+      {label:'Strain', data:recent.map(e=>e.strain), borderColor:'#8a1c2b', backgroundColor:'rgba(138,28,43,0.1)',
+       tension:0.3, pointRadius:2, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:9},maxTicksLimit:8}, grid:{color:'#2e2e34'}},
+        y:{position:'left', min:0, max:100, ticks:{color:'#e8112d',font:{size:10}}, grid:{color:'#2e2e34'}, title:{display:true,text:'Recovery %',color:'#e8112d',font:{size:10}}},
+        y1:{position:'right', min:0, max:21, ticks:{color:'#8a1c2b',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'Strain',color:'#8a1c2b',font:{size:10}}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:10},boxWidth:12}}}
+    }
+  });
+
+  if(whoopHrvChart) whoopHrvChart.destroy();
+  whoopHrvChart = new Chart(document.getElementById('whoopHrvChart'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'HRV (ms)', data:recent.map(e=>e.hrv), borderColor:'#e8112d', backgroundColor:'rgba(232,17,45,0.12)',
+       tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
+      {label:'Resting HR', data:recent.map(e=>e.rhr), borderColor:'#c81e3a', backgroundColor:'rgba(200,30,58,0.1)',
+       tension:0.3, pointRadius:2, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:9},maxTicksLimit:8}, grid:{color:'#2e2e34'}},
+        y:{position:'left', ticks:{color:'#e8112d',font:{size:10}}, grid:{color:'#2e2e34'}, title:{display:true,text:'HRV ms',color:'#e8112d',font:{size:10}}},
+        y1:{position:'right', ticks:{color:'#c81e3a',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'RHR bpm',color:'#c81e3a',font:{size:10}}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:10},boxWidth:12}}}
+    }
+  });
+}
+
+function renderWhoopTable(){
+  const body = document.getElementById('whoopBody');
+  const sorted = whoopEntries.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,60);
+  if(sorted.length===0){ body.innerHTML = `<tr><td colspan="10"><div class="empty">No WHOOP entries yet.</div></td></tr>`; return; }
+  const skinVals = whoopEntries.slice(-30).map(e=>e.skinTempC).filter(v=>v!=null);
+  const baseline = skinVals.length ? skinVals.reduce((a,b)=>a+b,0)/skinVals.length : null;
+  body.innerHTML = sorted.map(e=>{
+    let sd = null;
+    if(e.skinTempF != null) sd = e.skinTempF;
+    else if(baseline!=null && e.skinTempC!=null) sd = cToFDelta(e.skinTempC, baseline);
+    const del = e.source==='manual' ? `<button class="del-btn" onclick="deleteWhoop('${e.date}')">&times;</button>` : `<span style="color:var(--muted);font-size:11px;">\u2713</span>`;
+    return `<tr>
+      <td class="mono">${e.date}</td>
+      <td class="mono" style="color:${recoveryColor(e.recovery)};font-weight:600;">${e.recovery!=null?e.recovery+'%':'\u2014'}</td>
+      <td class="mono" style="color:var(--purple-bright);">${e.strain!=null?e.strain.toFixed(1):'\u2014'}</td>
+      <td class="mono">${e.sleepPerf!=null?e.sleepPerf+'%':'\u2014'}</td>
+      <td class="mono" style="color:var(--cyan);">${e.hrv??'\u2014'}</td>
+      <td class="mono">${e.rhr??'\u2014'}</td>
+      <td class="mono">${e.resp??'\u2014'}</td>
+      <td class="mono">${e.spo2??'\u2014'}</td>
+      <td class="mono">${sd!=null?(sd>=0?'+':'')+sd.toFixed(1):'\u2014'}</td>
+      <td>${del}</td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteWhoop(date){
+  const idx = manualWhoop.findIndex(w=>w.date===date);
+  if(idx>-1){ manualWhoop.splice(idx,1); saveWhoopManual(manualWhoop); rebuildWhoop(); renderAll(); }
+}
+
+document.getElementById('addWhoopBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('whDate').value;
+  if(!date){ alert('Pick a date first.'); return; }
+  const num = id => { const v = document.getElementById(id).value; return v===''?null:parseFloat(v); };
+  const skinF = num('whSkinTemp');
+  const entry = {
+    date,
+    recovery: num('whRecovery'),
+    strain: num('whStrain'),
+    sleepPerf: num('whSleep'),
+    hrv: num('whHrv'),
+    rhr: num('whRhr'),
+    resp: num('whResp'),
+    spo2: num('whSpo2'),
+    skinTempF: skinF
+  };
+  const existing = manualWhoop.findIndex(w=>w.date===date);
+  if(existing>-1) manualWhoop[existing] = entry; else manualWhoop.push(entry);
+  saveWhoopManual(manualWhoop);
+  rebuildWhoop();
+  ['whRecovery','whStrain','whSleep','whHrv','whRhr','whResp','whSpo2','whSkinTemp'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+});
+
+/* ---------------- INIT ---------------- */
+function renderSyncStatus(){
+  const el = document.getElementById('syncStatus');
+  if(syncInfo.ok){
+    const when = syncInfo.syncedAt ? new Date(syncInfo.syncedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'unknown';
+    el.innerHTML = `<span style="color:var(--green);">\u25CF</span> synced ${when}`;
+  } else {
+    el.innerHTML = `<span style="color:var(--amber);">\u25CF</span> no workouts.json \u2014 using seed data`;
+  }
+}
+function renderAll(){
+  renderSyncStatus();
+  renderGauges();
+  renderTimeline();
+  renderMilestones();
+  renderVolumeChart();
+  renderPaceChart();
+  renderDistanceChart();
+  renderLogTable();
+  renderWhoopRings();
+  renderWhoopStats();
+  renderWhoopCharts();
+  renderWhoopTable();
+  renderNutrition();
+  renderZones();
+  renderLoadChart();
+  renderStrength();
+}
+async function init(){
+  document.getElementById('raceDateInput').value = raceDate;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('wDate').value = today;
+  document.getElementById('whDate').value = today;
+  document.getElementById('lDate').value = today;
+  initProfileForm();
+  updateSportFields();
+  await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop()]);
+  renderAll();
+}
+init();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
