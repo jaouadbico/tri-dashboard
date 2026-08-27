@@ -36,16 +36,22 @@
   .display{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.02em;}
   a{color:var(--cyan);}
 
-  header{margin:calc(env(safe-area-inset-top, 0px) + 12px) 16px 16px;padding:14px 22px;border:1px solid var(--line);border-radius:999px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;background:linear-gradient(180deg, var(--panel-alt), var(--panel));box-shadow:var(--shadow);}
   body{padding-bottom:env(safe-area-inset-bottom, 0px);}
   @media (min-width:600px){ header{margin:22px 28px 20px;} }
+  header{margin:calc(env(safe-area-inset-top,0px) + 10px) 10px 14px;padding:12px 16px;border:1px solid var(--line);border-radius:26px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:linear-gradient(180deg, var(--panel-alt), var(--panel));box-shadow:var(--shadow);}
+  @media (min-width:600px){ header{margin:22px 28px 20px;padding:14px 22px;border-radius:999px;} }
   .brand{display:flex;align-items:center;gap:10px;}
-  .brand .mark{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(232,17,45,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .brand .mark{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(232,17,45,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   .brand .mark::after{content:'';width:10px;height:10px;border-radius:50%;background:var(--deep);}
-  .brand h1{font-size:clamp(15px,3.6vw,19px);margin:0;text-transform:uppercase;letter-spacing:0.02em;}
-  .brand .sub{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.1em;}
-  .race-set{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);flex-wrap:wrap;}
-  .race-set input{background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:12px;max-width:140px;}
+  .brand h1{font-size:clamp(13px,3.6vw,19px);margin:0;text-transform:uppercase;letter-spacing:0.02em;}
+  .brand .sub{color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:0.08em;}
+  @media (min-width:480px){ .brand .sub{font-size:10.5px;letter-spacing:0.1em;} }
+  .race-set{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);flex-wrap:wrap;row-gap:8px;}
+  @media (min-width:480px){ .race-set{font-size:11px;gap:8px;} }
+  .race-set input{background:var(--panel-alt);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px;max-width:118px;}
+  @media (min-width:480px){ .race-set input{padding:6px 10px;font-size:12px;max-width:140px;} }
+  .race-set-label{display:none;}
+  @media (min-width:560px){ .race-set-label{display:inline;} }
 
   main{max-width:1280px;margin:0 auto;padding:20px 16px 60px;}
   @media (min-width:600px){ main{padding:24px 28px 60px;} }
@@ -65,7 +71,7 @@
   .panel h2::before{content:'';width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--blue));display:inline-block;flex-shrink:0;box-shadow:0 0 8px rgba(232,17,45,0.6);}
   .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
   .grid-charts{display:grid;grid-template-columns:1fr;gap:14px;}
-  @media (min-width:860px){
+  @media (min-width:760px){
     .grid-2{grid-template-columns:1.4fr 1fr;gap:16px;}
     .grid-charts{grid-template-columns:1fr 1fr;gap:16px;}
   }
@@ -196,7 +202,7 @@
   <div class="race-set">
     <span id="syncStatus" class="mono">checking sync\u2026</span>
     <span style="opacity:0.4;">|</span>
-    RACE DATE
+    <span class="race-set-label">RACE DATE</span>
     <input type="date" id="raceDateInput">
     <button class="ghost" id="saveRaceDate">Set</button>
     <a href="plan.html" class="ghost" style="text-decoration:none;display:inline-block;">Program &rarr;</a>
