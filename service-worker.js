@@ -1,10 +1,11 @@
 // Bump this string any time you re-upload index.html/workouts.json/whoop.json
 // so iOS knows to fetch fresh copies instead of serving the old cache.
-const CACHE_NAME = 'atlas703-cache-v1';
+const CACHE_NAME = 'atlas703-cache-v2';
 
 const CORE_ASSETS = [
   './',
   './index.html',
+  './plan.html',
   './workouts.json',
   './whoop.json',
   './manifest.json',
