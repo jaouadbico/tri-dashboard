@@ -117,7 +117,8 @@
   .wo-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
   .wo-card-title{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;}
   .wo-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-  .wo-check{font-size:16px;flex-shrink:0;}
+  .wo-check{font-size:16px;flex-shrink:0;white-space:nowrap;}
+  .wo-check[title]{font-size:11px;color:var(--green);font-weight:700;}
   .wo-tags{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;}
   .wo-tag{font-size:9.5px;text-transform:uppercase;font-weight:700;letter-spacing:0.03em;padding:2px 9px;border-radius:999px;}
   .wo-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:10px;margin-top:8px;}
@@ -556,6 +557,32 @@ function buildProgram(){
 
 const PROGRAM = buildProgram();
 
+/* ---------------- SYNCED ACTUAL WORKOUTS (from workouts.json, same source as the Stats Dashboard) ---------------- */
+let syncedWorkouts = [];
+let syncOk = false;
+async function loadSyncedActuals(){
+  try{
+    const res = await fetch('workouts.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no workouts.json');
+    const data = await res.json();
+    syncedWorkouts = data.workouts || [];
+    syncOk = true;
+  }catch(e){
+    syncedWorkouts = [];
+    syncOk = false;
+  }
+}
+// Real logged minutes for a given sport within [startDate, endDate] inclusive (both ISO strings)
+function actualMinutes(sport, startDate, endDate){
+  return syncedWorkouts
+    .filter(w => w.sport===sport && w.date>=startDate && w.date<=endDate)
+    .reduce((sum,w)=> sum + (w.duration||0), 0);
+}
+// Whether a real logged activity exists for this sport on this exact date (used to auto-check day cards)
+function hasActualOnDate(sport, date){
+  return syncedWorkouts.some(w => w.sport===sport && w.date===date);
+}
+
 /* ---------------- PROGRESS PERSISTENCE ---------------- */
 const DONE_KEY = 'atlas703_plan_done_v1';
 function loadDone(){ try { return JSON.parse(localStorage.getItem(DONE_KEY)) || {}; } catch(e){ return {}; } }
@@ -645,18 +672,17 @@ function renderWeekView(){
   if(!week) return;
   const todayStr = new Date().toISOString().slice(0,10);
 
-  // targets and completed minutes per sport for this viewed week
+  // targets from the plan, completed minutes from your ACTUAL synced Strava data for this week
   const sports = ['Swim','Bike','Run'];
   const targets = {}, completed = {};
   sports.forEach(sp=>{ targets[sp]=0; completed[sp]=0; });
   week.sessions.forEach(s=>{
-    const total = s.duration + (s.sport==='Bike' && s.isBrick ? 0 : 0);
     if(targets[s.sport]!=null) targets[s.sport] += s.duration;
     if(s.isBrick){ targets['Run'] = (targets['Run']||0) + s.brickDur; }
-    if(doneMap[sessionKey(s)]){
-      completed[s.sport] = (completed[s.sport]||0) + s.duration;
-      if(s.isBrick) completed['Run'] = (completed['Run']||0) + s.brickDur;
-    }
+  });
+  const weekEnd = isoDate(addDays(new Date(week.start+'T00:00:00'), 6));
+  sports.forEach(sp=>{
+    completed[sp] = actualMinutes(sp, week.start, weekEnd);
   });
   const totalTarget = sports.reduce((a,sp)=>a+targets[sp],0);
   const totalDone = sports.reduce((a,sp)=>a+completed[sp],0);
@@ -687,7 +713,7 @@ function renderWeekView(){
     </div>
     <div class="sport-ring-row">${ringsHtml}</div>
     <div class="total-duration">\u23F1\uFE0F Total duration: <b>${fmtHM(totalDone)}</b> / ${fmtHM(totalTarget)}</div>
-  `;
+    <div style="font-size:10px;color:var(--muted);margin-top:4px;">${syncOk ? '\u2713 Progress from your synced Strava data' : '\u26a0 workouts.json not found \u2014 progress shows 0 until synced'}</div>`;
 
   renderDayList(week, todayStr);
 }
@@ -713,7 +739,8 @@ function renderDayList(week, todayStr){
     }
     const s = day.session;
     const key = sessionKey(s);
-    const isDone = !!doneMap[key];
+    const autoDone = hasActualOnDate(s.sport, s.date);
+    const isDone = !!doneMap[key] || autoDone;
     const m = sessionMetrics(s, week.phase);
     const structId = `dstruct-${idx}`;
     const structHtml = (s.structure||[]).map(seg=>`
@@ -732,7 +759,7 @@ function renderDayList(week, todayStr){
             <div class="wo-icon" style="background:${SPORT_HEX[s.sport]}33;">${SPORT_ICON[s.sport]}</div>
             <span>${s.title}${s.isBrick?' + Brick':''}</span>
           </div>
-          <span class="wo-check" onclick="event.stopPropagation();toggleDone('${key}')" style="cursor:pointer;">${isDone?'\u2705':'\u2b1c'}</span>
+          <span class="wo-check" ${autoDone ? `title="Matched to your synced Strava activity"` : `onclick="event.stopPropagation();toggleDone('${key}')" style="cursor:pointer;"`}>${autoDone ? '\u2705 synced' : (isDone?'\u2705':'\u2b1c')}</span>
         </div>
         <div class="wo-tags">
           <span class="wo-tag" style="background:rgba(139,124,240,0.2);color:#b3a6ff;">${week.phaseName}</span>
@@ -867,7 +894,11 @@ function autoExpandCurrentPhase(){
     accordions[idx].querySelector('.phase-body').classList.add('open');
   }
 }
-renderAll();
+async function init(){
+  await loadSyncedActuals();
+  renderAll();
+}
+init();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
