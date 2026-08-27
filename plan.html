@@ -71,6 +71,19 @@
   .today-meta .tval{font-weight:700;font-size:14px;margin-top:2px;}
   .rest-day{font-size:15px;color:var(--muted);padding:10px 0;}
 
+  /* Structured workout breakdown (warm-up / main set / cooldown) */
+  .wo-structure{margin-top:6px;border-top:1px solid var(--line);padding-top:12px;}
+  .wo-seg{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .wo-seg:last-child{border-bottom:none;}
+  .wo-seg-label{flex:0 0 92px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--cyan);font-weight:700;padding-top:1px;}
+  .wo-seg-text{flex:1;font-size:12.5px;color:var(--text);line-height:1.5;}
+
+  /* Swap suggestions (easier/harder), Stamina-style */
+  .swap-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  .swap-box{background:var(--panel-alt);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+  .swap-label{font-size:9.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px;}
+  .swap-text{font-size:11.5px;color:var(--text);line-height:1.4;}
+
   button.primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#04213a;border:none;padding:10px 18px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px;}
   button.primary:hover{filter:brightness(1.1);}
   button.primary.done{background:var(--panel-alt);color:var(--green);border:1px solid var(--green);}
@@ -113,6 +126,8 @@
   .sess-line{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;}
   .sess-line .sname{color:var(--text);}
   .sess-line .sdur{color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .sess-struct{display:none;padding:2px 0 6px 10px;border-left:2px solid var(--line);margin:2px 0 4px;}
+  .sess-struct.open{display:block;}
 
   .empty{color:var(--muted);font-size:12px;text-align:center;padding:14px 0;}
   footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;}
@@ -238,39 +253,166 @@ function phaseTemplate(phaseKey){
   const rt = BASELINE.runThresholdPace, sp = BASELINE.swimPace100m;
   switch(phaseKey){
     case 'foundation': return [
-      {day:0, sport:'Swim', title:'Swim Technique', dur:[20,35], detail:'Drills + easy aerobic. No pace target yet \u2014 focus on catch, body position, breathing. Reference pace once comfortable: aim toward ' + sp + '.'},
-      {day:2, sport:'Run', title:'Easy Run', dur:[25,40], detail:`Conversational pace, well slower than threshold (${rt}) \u2014 target ~10:45\u201311:15/mi. Walk breaks fine.`},
-      {day:4, sport:'Bike', title:'Easy Bike', dur:[30,60], detail:'Zone 2 effort by feel (no FTP yet \u2014 should be able to hold a conversation the whole ride).'},
-      {day:5, sport:'Bike', title:'Long Bike (alt. Long Swim)', dur:[35,70], detail:'Longer easy bike \u2014 this is a big volume gap versus your run/strength history, so protect this session.', altOdd:{sport:'Swim', title:'Long Swim', dur:[30,45], detail:'Longer easy swim, building toward 500m continuous. Alternates with long bike on even weeks.'}},
+      {day:0, sport:'Swim', title:'Swim Technique', type:'technique', dur:[20,35], detail:'Drills + easy aerobic. No pace target yet \u2014 focus on catch, body position, breathing. Reference pace once comfortable: aim toward ' + sp + '.'},
+      {day:2, sport:'Run', title:'Easy Run', type:'easy', dur:[25,40], detail:`Conversational pace, well slower than threshold (${rt}) \u2014 target ~10:45\u201311:15/mi. Walk breaks fine.`},
+      {day:4, sport:'Bike', title:'Easy Bike', type:'easy', dur:[30,60], detail:'Zone 2 effort by feel (no FTP yet \u2014 should be able to hold a conversation the whole ride).'},
+      {day:5, sport:'Bike', title:'Long Bike (alt. Long Swim)', type:'longBike', dur:[35,70], detail:'Longer easy bike \u2014 this is a big volume gap versus your run/strength history, so protect this session.', altOdd:{sport:'Swim', title:'Long Swim', type:'longSwim', dur:[30,45], detail:'Longer easy swim, building toward 500m continuous. Alternates with long bike on even weeks.'}},
     ];
     case 'base': return [
-      {day:0, sport:'Swim', title:'Swim + Intervals', dur:[25,40], detail:`Technique work plus short intervals (e.g. 8x50m). Target pace reference: ${sp}.`},
-      {day:2, sport:'Run', title:'Run w/ Strides', dur:[30,45], detail:`Easy base with 4-6 x 20sec strides. Keep bulk of the run 60-90sec/mi slower than ${rt}.`},
-      {day:4, sport:'Bike', title:'Bike Endurance', dur:[40,75], detail:'Zone 2, building duration. This is your biggest volume gap \u2014 protect this session.'},
-      {day:5, sport:'Bike', title:'Long Bike', dur:[45,90], detail:'Steady effort. Every 3rd week: add a 10-15min run off the bike (brick) right after dismounting.', brickEvery:3},
-      {day:6, sport:'Run', title:'Long Run', dur:[35,55], detail:`Easy/steady, slower than ${rt}. This becomes your longest run of the week.`},
+      {day:0, sport:'Swim', title:'Swim + Intervals', type:'swimIntervals', dur:[25,40], detail:`Technique work plus short intervals (e.g. 8x50m). Target pace reference: ${sp}.`},
+      {day:2, sport:'Run', title:'Run w/ Strides', type:'strides', dur:[30,45], detail:`Easy base with 4-6 x 20sec strides. Keep bulk of the run 60-90sec/mi slower than ${rt}.`},
+      {day:4, sport:'Bike', title:'Bike Endurance', type:'easy', dur:[40,75], detail:'Zone 2, building duration. This is your biggest volume gap \u2014 protect this session.'},
+      {day:5, sport:'Bike', title:'Long Bike', type:'longBike', dur:[45,90], detail:'Steady effort. Every 3rd week: add a 10-15min run off the bike (brick) right after dismounting.', brickEvery:3},
+      {day:6, sport:'Run', title:'Long Run', type:'long', dur:[35,55], detail:`Easy/steady, slower than ${rt}. This becomes your longest run of the week.`},
     ];
     case 'build1': return [
-      {day:0, sport:'Swim', title:'Swim Intervals', dur:[30,45], detail:`Race-pace repeats at/near ${sp}, with rest. Building toward continuous 1900m later this phase.`},
-      {day:1, sport:'Run', title:'Tempo Run', dur:[35,50], detail:`Warm up easy, then sustained effort at/near threshold pace (${rt}) for the middle portion.`},
-      {day:3, sport:'Bike', title:'Bike Intervals', dur:[40,60], detail:'Effort-based intervals (hard/easy by feel) \u2014 get an FTP test done this phase if possible so these become power-based.'},
-      {day:5, sport:'Bike', title:'Long Bike + Race Pace', dur:[60,150], detail:'Long steady ride with race-effort surges. Every other week: 15-25min run off the bike after.', brickEvery:2},
-      {day:6, sport:'Run', title:'Long Run', dur:[45,75], detail:'Steady effort, building duration toward race demands.'},
+      {day:0, sport:'Swim', title:'Swim Intervals', type:'swimIntervals', dur:[30,45], detail:`Race-pace repeats at/near ${sp}, with rest. Building toward continuous 1900m later this phase.`},
+      {day:1, sport:'Run', title:'Tempo Run', type:'tempo', dur:[35,50], detail:`Warm up easy, then sustained effort at/near threshold pace (${rt}) for the middle portion.`},
+      {day:3, sport:'Bike', title:'Bike Intervals', type:'bikeIntervals', dur:[40,60], detail:'Effort-based intervals (hard/easy by feel) \u2014 get an FTP test done this phase if possible so these become power-based.'},
+      {day:5, sport:'Bike', title:'Long Bike + Race Pace', type:'longBike', dur:[60,150], detail:'Long steady ride with race-effort surges. Every other week: 15-25min run off the bike after.', brickEvery:2},
+      {day:6, sport:'Run', title:'Long Run', type:'long', dur:[45,75], detail:'Steady effort, building duration toward race demands.'},
     ];
     case 'build2': return [
-      {day:0, sport:'Swim', title:'Race-Pace Swim', dur:[35,50], detail:`Continuous swims building to the full 1900m race distance at/near ${sp}.`},
-      {day:1, sport:'Run', title:'Race-Pace Run', dur:[40,60], detail:`Tempo/threshold intervals at ${rt}, with race-effort surges.`},
-      {day:3, sport:'Bike', title:'Bike Tempo', dur:[45,60], detail:'Sustained tempo effort, race-simulation pacing.'},
-      {day:5, sport:'Bike', title:'KEY BRICK: Long Bike + Run', dur:[120,210], detail:'The most important session type in the whole plan. Ride most of race-day bike duration, then run 15-40min off the bike at race pace.', brickAlways:true, brickDur:[15,40]},
-      {day:6, sport:'Run', title:'Long Run', dur:[60,90], detail:'Peak long run of the plan. Consider an Olympic-distance tri or half-marathon as a tune-up race mid-phase.'},
+      {day:0, sport:'Swim', title:'Race-Pace Swim', type:'racePaceSwim', dur:[35,50], detail:`Continuous swims building to the full 1900m race distance at/near ${sp}.`},
+      {day:1, sport:'Run', title:'Race-Pace Run', type:'runRacePace', dur:[40,60], detail:`Tempo/threshold intervals at ${rt}, with race-effort surges.`},
+      {day:3, sport:'Bike', title:'Bike Tempo', type:'bikeTempo', dur:[45,60], detail:'Sustained tempo effort, race-simulation pacing.'},
+      {day:5, sport:'Bike', title:'KEY BRICK: Long Bike + Run', type:'keyBrick', dur:[120,210], detail:'The most important session type in the whole plan. Ride most of race-day bike duration, then run 15-40min off the bike at race pace.', brickAlways:true, brickDur:[15,40]},
+      {day:6, sport:'Run', title:'Long Run', type:'long', dur:[60,90], detail:'Peak long run of the plan. Consider an Olympic-distance tri or half-marathon as a tune-up race mid-phase.'},
     ];
     case 'taper': return [
-      {day:0, sport:'Swim', title:'Easy Swim', dur:[20,15], detail:'Short, easy, a few race-pace touches only. Volume drops, not intensity.'},
-      {day:2, sport:'Run', title:'Short Run + Strides', dur:[25,20], detail:'Short and easy with a few strides to stay sharp.'},
-      {day:4, sport:'Bike', title:'Easy Spin', dur:[30,25], detail:'Easy spin with a few short race-pace efforts. Legs should feel fresher each session.'},
-      {day:6, sport:'Rest', title:'Rest / Race Week Logistics', dur:[0,0], detail:'Gear check, course recon, sleep and nutrition dialed in. Final week: race day.'},
+      {day:0, sport:'Swim', title:'Easy Swim', type:'taperSwim', dur:[20,15], detail:'Short, easy, a few race-pace touches only. Volume drops, not intensity.'},
+      {day:2, sport:'Run', title:'Short Run + Strides', type:'taperRun', dur:[25,20], detail:'Short and easy with a few strides to stay sharp.'},
+      {day:4, sport:'Bike', title:'Easy Spin', type:'taperBike', dur:[30,25], detail:'Easy spin with a few short race-pace efforts. Legs should feel fresher each session.'},
+      {day:6, sport:'Rest', title:'Rest / Race Week Logistics', type:'rest', dur:[0,0], detail:'Gear check, course recon, sleep and nutrition dialed in. Final week: race day.'},
     ];
   }
+}
+
+/* ---------------- STRUCTURED WORKOUT BREAKDOWN (warm-up / main set / cooldown) ---------------- */
+function buildStructure(sport, type, duration, brickDur){
+  const rt = BASELINE.runThresholdPace, sp = BASELINE.swimPace100m;
+  const wu = Math.min(12, Math.max(5, Math.round(duration*0.15)));
+  const cd = Math.min(8, Math.max(3, Math.round(duration*0.10)));
+  const main = Math.max(duration - wu - cd, 5);
+  const segs = [];
+  switch(type){
+    case 'technique':
+      segs.push({label:'Warm-up', text:`${Math.min(wu,8)} min easy swim + arm/shoulder mobility`});
+      segs.push({label:'Main Set', text:`${main} min drill work (catch-up, fist drill, single-arm) alternated with easy continuous swimming. Focus on form, not speed.`});
+      segs.push({label:'Cool-down', text:`${cd} min easy swim, relaxed`});
+      break;
+    case 'swimIntervals': {
+      const reps = Math.max(4, Math.round(main/3));
+      segs.push({label:'Warm-up', text:`150-200m easy + 4x25m build`});
+      segs.push({label:'Main Set', text:`${reps} x 50-100m @ ${sp} pace, 15-20sec rest between reps`});
+      segs.push({label:'Cool-down', text:`100m easy swim`});
+      break; }
+    case 'longSwim':
+      segs.push({label:'Warm-up', text:`100-150m easy`});
+      segs.push({label:'Main Set', text:`Continuous swim for ${main} min, steady effort. Negative split the last quarter if it feels good.`});
+      segs.push({label:'Cool-down', text:`100m easy`});
+      break;
+    case 'racePaceSwim': {
+      const reps = Math.max(3, Math.round(main/6));
+      segs.push({label:'Warm-up', text:`150-200m easy + drills`});
+      segs.push({label:'Main Set', text:`${reps} x 300-400m @ ${sp} race pace, 20-30sec rest \u2014 building toward continuous 1900m`});
+      segs.push({label:'Cool-down', text:`100m easy`});
+      break; }
+    case 'taperSwim':
+      segs.push({label:'Warm-up', text:`100m easy`});
+      segs.push({label:'Main Set', text:`${main} min easy with 4-6 x 25m @ race pace touches, full recovery`});
+      segs.push({label:'Cool-down', text:`50-100m easy`});
+      break;
+    case 'easy':
+      segs.push({label:'Warm-up', text:`${wu} min easy building into pace`});
+      segs.push({label:'Main Set', text:sport==='Run'
+        ? `${main} min conversational pace, well slower than threshold (${rt})`
+        : `${main} min Zone 2 effort \u2014 should be able to hold a conversation the whole time`});
+      segs.push({label:'Cool-down', text:`${cd} min easy`});
+      break;
+    case 'strides':
+      segs.push({label:'Warm-up', text:`${wu} min easy jog`});
+      segs.push({label:'Main Set', text:`${Math.max(main-8,10)} min easy running with 4-6 x 20sec relaxed strides (fast but controlled) inserted, full recovery jog between each`});
+      segs.push({label:'Cool-down', text:`${cd} min easy jog`});
+      break;
+    case 'tempo':
+      segs.push({label:'Warm-up', text:`${wu} min easy jog + 3-4 strides`});
+      segs.push({label:'Main Set', text:`${Math.max(main-5,15)} min continuous @ threshold pace (${rt})`});
+      segs.push({label:'Cool-down', text:`${cd} min easy jog`});
+      break;
+    case 'runRacePace': {
+      const reps = Math.max(4, Math.round(main/6));
+      segs.push({label:'Warm-up', text:`${wu} min easy + drills + strides`});
+      segs.push({label:'Main Set', text:`${reps} x 3-4 min @ threshold/race pace (${rt}), 90sec jog recovery between reps`});
+      segs.push({label:'Cool-down', text:`${cd} min easy jog`});
+      break; }
+    case 'long':
+      segs.push({label:'Warm-up', text:`5 min easy`});
+      segs.push({label:'Main Set', text:`${main} min steady/easy pace, slower than ${rt}. Optional: last 10min slightly faster if legs feel good.`});
+      segs.push({label:'Cool-down', text:`5 min walk`});
+      break;
+    case 'bikeIntervals': {
+      const reps = Math.max(3, Math.round(main/8));
+      segs.push({label:'Warm-up', text:`${wu} min easy spin, building cadence`});
+      segs.push({label:'Main Set', text:`${reps} x 5 min hard effort (tempo/threshold by feel), 3 min easy spin recovery between`});
+      segs.push({label:'Cool-down', text:`${cd} min easy spin`});
+      break; }
+    case 'bikeTempo':
+      segs.push({label:'Warm-up', text:`${wu} min easy spin`});
+      segs.push({label:'Main Set', text:`${main} min sustained tempo effort, race-simulation pacing`});
+      segs.push({label:'Cool-down', text:`${cd} min easy spin`});
+      break;
+    case 'longBike':
+      segs.push({label:'Warm-up', text:`10 min easy spin`});
+      segs.push({label:'Main Set', text:`${main} min steady Zone 2, with 2-3 x 5min race-pace surges mixed in`});
+      segs.push({label:'Cool-down', text:`10 min easy spin`});
+      break;
+    case 'taperBike':
+      segs.push({label:'Warm-up', text:`5 min easy spin`});
+      segs.push({label:'Main Set', text:`${main} min easy with 3 x 1min pickups`});
+      segs.push({label:'Cool-down', text:`${cd} min easy spin`});
+      break;
+    case 'taperRun':
+      segs.push({label:'Warm-up', text:`5 min easy jog`});
+      segs.push({label:'Main Set', text:`${main} min easy with 3-4 x 20sec strides`});
+      segs.push({label:'Cool-down', text:`${cd} min easy jog`});
+      break;
+    case 'keyBrick':
+      segs.push({label:'Warm-up (Bike)', text:`10 min easy spin`});
+      segs.push({label:'Main Set (Bike)', text:`${main} min at race-day bike effort \u2014 steady, sustainable, practice race nutrition/hydration`});
+      segs.push({label:'Transition', text:`Quick change, aim under 3 min`});
+      segs.push({label:'Run Off the Bike', text:`${brickDur} min @ race pace \u2014 legs will feel heavy for the first 5 min, that's normal. Focus on finding rhythm.`});
+      break;
+    case 'rest':
+      segs.push({label:'Today', text:'Full rest or light mobility/stretching only. No structured training.'});
+      break;
+    default:
+      segs.push({label:'Session', text:`${duration} min, effort per the notes above.`});
+  }
+  return segs;
+}
+
+function swapSuggestion(sport, type){
+  const table = {
+    technique:{easier:'Cut main set in half, extra rest between drills', harder:'Add 2-3 x 50m build-pace efforts at the end'},
+    swimIntervals:{easier:'Fewer reps, longer rest (30sec)', harder:'Add 2 more reps or cut rest to 10sec'},
+    longSwim:{easier:'Trim 10-15 min off, keep it fully easy', harder:'Add a negative-split final 200m at race pace'},
+    racePaceSwim:{easier:'Reduce to shorter reps (150-200m) with more rest', harder:'Reduce rest to 15sec between reps'},
+    taperSwim:{easier:'Skip the race-pace touches, all easy', harder:'Add 2 more 25m touches'},
+    easy:{easier:'Trim 10-15 min off the main set', harder:'Add 10-15 min, still easy effort'},
+    strides:{easier:'Drop to 3 strides, skip if legs feel heavy', harder:'Add 2 more strides, slightly longer (30sec)'},
+    tempo:{easier:'Shorten tempo block by 5 min, same pace', harder:'Extend tempo block by 5-8 min'},
+    runRacePace:{easier:'Drop 1-2 reps or extend recovery to 2 min', harder:'Add 1 more rep or cut recovery to 60sec'},
+    long:{easier:'Trim 10-20% off duration, keep it easy', harder:'Add 10-15 min or a stronger final segment'},
+    bikeIntervals:{easier:'Drop to shorter reps (3 min) with more recovery', harder:'Add 1 more rep or extend to 6-7 min each'},
+    bikeTempo:{easier:'Shorten tempo block, ease off the effort slightly', harder:'Extend tempo block by 10 min'},
+    longBike:{easier:'Trim 20-30 min, skip the surges', harder:'Add 20-30 min or an extra surge'},
+    taperBike:{easier:'All easy, skip the pickups', harder:'Add 1-2 more short pickups'},
+    taperRun:{easier:'Drop the strides, keep it fully easy', harder:'Add 1-2 more strides'},
+    keyBrick:{easier:'Cut the bike portion by 30-45 min, keep the run off the bike the same', harder:'Extend the bike by 20-30 min before the run'},
+    rest:{easier:'Full rest, no exceptions', harder:'A short 15-20 min walk is fine, nothing more'},
+  };
+  return table[type] || {easier:'Reduce duration by ~20%', harder:'Extend duration by ~15-20%'};
 }
 
 /* ---------------- PROGRAM GENERATION ---------------- */
@@ -301,7 +443,9 @@ function buildProgram(){
         else if(s.brickEvery && (globalWeekNum % s.brickEvery === 0)){ isBrick = true; brickDur = 15; }
         sessions.push({
           date: isoDate(date), sport: useTpl.sport, title: useTpl.title,
-          duration: dur, detail: useTpl.detail, isBrick, brickDur
+          duration: dur, detail: useTpl.detail, isBrick, brickDur,
+          structure: buildStructure(useTpl.sport, useTpl.type, dur, brickDur),
+          swap: swapSuggestion(useTpl.sport, useTpl.type)
         });
       });
       weeks.push({weekNum: globalWeekNum, phase: phase.key, phaseName: phase.name, phaseNote: phase.note, start: isoDate(weekStart), sessions});
@@ -372,6 +516,16 @@ function renderToday(){
   }
   const key = sessionKey(session);
   const isDone = !!doneMap[key];
+  const structHtml = (session.structure||[]).map(seg=>`
+    <div class="wo-seg">
+      <div class="wo-seg-label">${seg.label}</div>
+      <div class="wo-seg-text">${seg.text}</div>
+    </div>`).join('');
+  const swapHtml = session.swap ? `
+    <div class="swap-row">
+      <div class="swap-box"><div class="swap-label">If it's too much</div><div class="swap-text">${session.swap.easier}</div></div>
+      <div class="swap-box"><div class="swap-label">If you want more</div><div class="swap-text">${session.swap.harder}</div></div>
+    </div>` : '';
   el.innerHTML = `
     <div class="today-date">${dateLabel} &middot; Week ${week.weekNum} &middot; ${week.phaseName}</div>
     <div class="today-title">${session.title}${session.isBrick?' + Brick':''}</div>
@@ -380,11 +534,12 @@ function renderToday(){
       <div><div class="tlabel">Sport</div><div class="tval">${session.sport}</div></div>
       <div><div class="tlabel">Duration</div><div class="tval">${session.duration} min${session.isBrick? ' + '+session.brickDur+'min run':''}</div></div>
     </div>
-    <button class="primary ${isDone?'done':''}" onclick="toggleDone('${key}')">${isDone?'\u2713 Completed':'Mark Complete'}</button>
+    <div class="wo-structure">${structHtml}</div>
+    ${swapHtml}
+    <button class="primary ${isDone?'done':''}" onclick="toggleDone('${key}')" style="margin-top:14px;">${isDone?'\u2713 Completed':'Mark Complete'}</button>
   `;
 }
 
-/* ---------------- RENDER: WEEK STRIP ---------------- */
 /* ---------------- RENDER: HERO PLAN CARD ---------------- */
 function renderHeroPlan(){
   const el = document.getElementById('heroPlan');
@@ -489,7 +644,17 @@ function renderAccordion(){
       <div class="week-row-v2 ${isCurrent?'is-current':''}" id="week-${w.weekNum}">
         <div class="wlh"><span class="wname">Week ${w.weekNum} &middot; ${fmtDate(new Date(w.start+'T00:00:00'))} &middot; ${hrs}h</span><span class="wload">${load}</span></div>
         <div class="wload-bar"><div class="wload-bar-fill" style="width:${barPct}%;"></div></div>
-        ${w.sessions.map(s=>`<div class="sess-line"><span class="sname">${s.sport}: ${s.title}${s.isBrick?' + Brick':''}</span><span class="sdur">${s.duration}${s.isBrick?'+'+s.brickDur:''} min</span></div>`).join('')}
+        ${w.sessions.map((s,si)=>{
+          const structId = `struct-${w.weekNum}-${si}`;
+          const structMini = (s.structure||[]).map(seg=>`<div class="wo-seg" style="padding:5px 0;"><div class="wo-seg-label" style="flex-basis:78px;font-size:9.5px;">${seg.label}</div><div class="wo-seg-text" style="font-size:11.5px;">${seg.text}</div></div>`).join('');
+          return `<div class="sess-line-wrap">
+            <div class="sess-line" style="cursor:pointer;" onclick="document.getElementById('${structId}').classList.toggle('open')">
+              <span class="sname">${s.sport}: ${s.title}${s.isBrick?' + Brick':''}</span>
+              <span class="sdur">${s.duration}${s.isBrick?'+'+s.brickDur:''} min</span>
+            </div>
+            <div class="sess-struct" id="${structId}">${structMini}</div>
+          </div>`;
+        }).join('')}
       </div>`;
     }).join('');
     return `<div class="phase-accordion" ${isCurrentPhase?'style="border-color:var(--cyan);"':''}>
