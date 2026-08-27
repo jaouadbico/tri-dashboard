@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-21T09:05:00Z",
+  "syncedAt": "2026-08-26T15:00:00Z",
   "source": "manual Strava pull",
   "workouts": [
     {
@@ -267,6 +267,41 @@
       "duration": 10,
       "distance": null,
       "notes": "Night weight training"
+    },
+    {
+      "date": "2026-08-24",
+      "sport": "Swim",
+      "duration": 13,
+      "distance": 0.47,
+      "notes": "Afternoon swim \u2014 750m, ~187 cal"
+    },
+    {
+      "date": "2026-08-25",
+      "sport": "Run",
+      "duration": 17,
+      "distance": 2.15,
+      "notes": "Morning run \u2014 cadence ~160 spm"
+    },
+    {
+      "date": "2026-08-25",
+      "sport": "Swim",
+      "duration": 4,
+      "distance": 0.08,
+      "notes": "Afternoon swim drill \u2014 125m"
+    },
+    {
+      "date": "2026-08-25",
+      "sport": "Swim",
+      "duration": 15,
+      "distance": 0.54,
+      "notes": "Evening swim \u2014 875m, ~242 cal"
+    },
+    {
+      "date": "2026-08-26",
+      "sport": "Swim",
+      "duration": 23,
+      "distance": 0.67,
+      "notes": "Afternoon swim \u2014 1075m, ~295 cal"
     }
   ]
 }
