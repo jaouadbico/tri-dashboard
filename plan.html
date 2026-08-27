@@ -549,6 +549,521 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(232,17,45,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .brand .mark::after{content:'';width:10px;height:10px;border-radius:50%;background:#050506;}
+  .brand h1{font-size:clamp(13px,3.6vw,19px);margin:0;text-transform:uppercase;letter-spacing:0.02em;}
+  .brand .sub{color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:0.08em;}
+  @media (min-width:480px){ .brand .sub{font-size:10.5px;letter-spacing:0.1em;} }
+  .nav-link{font-size:11px;border:1px solid var(--line);padding:7px 13px;border-radius:999px;color:var(--muted);white-space:nowrap;}
+  @media (min-width:480px){ .nav-link{font-size:12px;padding:8px 16px;} }
+  .nav-link:hover{color:var(--text);border-color:var(--muted);}
+
+  main{max-width:1100px;margin:0 auto;padding:0 16px 60px;}
+  @media (min-width:600px){ main{padding:0 28px 60px;} }
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
+  @media (min-width:560px){ .panel{padding:22px 24px;} }
+  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:0.06em;margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:3px;height:14px;background:var(--cyan);display:inline-block;flex-shrink:0;}
+
+  /* Baseline strip */
+  .baseline-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media (min-width:600px){ .baseline-grid{grid-template-columns:repeat(4,1fr);} }
+  .baseline-card{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .baseline-card .blabel{font-size:9.5px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
+  .baseline-card .bval{font-size:16px;font-weight:700;margin-top:3px;}
+  .baseline-card .bnote{font-size:9.5px;color:var(--muted);margin-top:2px;}
+
+  /* Today hero */
+  .today-hero{border:1px solid var(--cyan);background:linear-gradient(160deg, rgba(232,17,45,0.10), var(--panel));}
+  .today-date{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+  .today-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(19px,5.5vw,26px);margin:6px 0 4px;}
+  .today-detail{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
+  .today-meta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .today-meta div{font-size:12px;}
+  .today-meta .tlabel{color:var(--muted);text-transform:uppercase;font-size:9.5px;letter-spacing:0.06em;}
+  .today-meta .tval{font-weight:700;font-size:14px;margin-top:2px;}
+  .rest-day{font-size:15px;color:var(--muted);padding:10px 0;}
+
+  button.primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#04213a;border:none;padding:10px 18px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px;}
+  button.primary:hover{filter:brightness(1.1);}
+  button.primary.done{background:var(--panel-alt);color:var(--green);border:1px solid var(--green);}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 16px;border-radius:999px;cursor:pointer;font-size:12px;}
+  button.ghost:hover{color:var(--text);border-color:var(--muted);}
+
+  /* Week strip */
+  .week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  @media (max-width:700px){
+    .week-strip{display:flex;overflow-x:auto;gap:8px;padding-bottom:6px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;}
+    .week-strip .day-card{flex:0 0 92px;scroll-snap-align:start;}
+  }
+  .day-card{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center;min-height:110px;display:flex;flex-direction:column;justify-content:space-between;}
+  .day-card.today{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan);}
+  .day-card.done{opacity:0.55;}
+  .day-card .dname{font-size:9.5px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
+  .day-card .ddate{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .day-card .dtag{font-size:9.5px;padding:2px 6px;border-radius:20px;font-weight:700;text-transform:uppercase;margin:6px auto 4px;display:inline-block;}
+  .day-card .ddur{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .day-card .dcheck{font-size:14px;margin-top:6px;}
+
+  .tag-run{background:rgba(232,17,45,0.18);color:var(--cyan);}
+  .tag-bike{background:rgba(255,106,61,0.18);color:var(--amber);}
+  .tag-swim{background:rgba(245,245,246,0.15);color:var(--blue);}
+  .tag-strength{background:rgba(154,154,162,0.18);color:var(--slate);}
+  .tag-brick{background:rgba(138,28,43,0.25);color:var(--purple-bright);}
+  .tag-rest{background:rgba(255,255,255,0.06);color:var(--muted);}
+
+  /* Phase accordion */
+  .phase-accordion{border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;}
+  .phase-head{padding:12px 16px;background:var(--panel-alt);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .phase-head > div:first-child{min-width:0;flex:1;}
+  .phase-head .pname{font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;font-size:13px;}
+  .phase-head .pdate{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .phase-body{display:none;padding:8px 16px 14px;}
+  .phase-body.open{display:block;}
+  .week-row{border-bottom:1px dashed var(--line);padding:10px 0;}
+  .week-row:last-child{border-bottom:none;}
+  .week-row .wlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  .sess-line{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;}
+  .sess-line .sname{color:var(--text);}
+  .sess-line .sdur{color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+  .empty{color:var(--muted);font-size:12px;text-align:center;padding:14px 0;}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;}
+
+  /* Hero plan card */
+  .hero-plan{background:linear-gradient(135deg, rgba(232,17,45,0.28), rgba(138,28,43,0.35));border-color:var(--cyan);}
+  .hero-plan .hlabel{font-size:11px;color:rgba(245,245,246,0.75);text-transform:uppercase;letter-spacing:0.1em;}
+  .hero-plan .htitle{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(22px,6vw,30px);margin:4px 0 8px;}
+  .hero-plan .hrange{font-size:12.5px;color:rgba(245,245,246,0.8);margin-bottom:14px;}
+  .hero-plan .hweek{font-size:12.5px;font-weight:600;margin-bottom:8px;}
+  .hero-bar{height:6px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden;}
+  .hero-bar-fill{height:100%;background:var(--text);border-radius:4px;}
+
+  /* Sport-tinted day cards (This Week strip) */
+  .day-card.tint-run{background:rgba(232,17,45,0.18);border-color:rgba(232,17,45,0.4);}
+  .day-card.tint-bike{background:rgba(255,106,61,0.18);border-color:rgba(255,106,61,0.4);}
+  .day-card.tint-swim{background:rgba(245,245,246,0.12);border-color:rgba(245,245,246,0.3);}
+  .day-card.tint-strength{background:rgba(154,154,162,0.15);border-color:rgba(154,154,162,0.35);}
+  .day-card .dtag2{font-size:12px;font-weight:700;margin:6px 0 2px;}
+
+  /* Phase badges (color per phase type, matching index.html Phase Timeline) */
+  .phase-badge{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:3px 10px;border-radius:999px;margin-right:8px;}
+  .phase-badge.foundation{background:rgba(245,245,246,0.15);color:var(--text);}
+  .phase-badge.base{background:rgba(255,106,61,0.18);color:var(--amber);}
+  .phase-badge.build1{background:rgba(232,17,45,0.2);color:var(--cyan);}
+  .phase-badge.build2{background:rgba(200,30,58,0.28);color:#ff8a94;}
+  .phase-badge.taper{background:rgba(138,28,43,0.3);color:var(--purple-bright);}
+  .phase-marker{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:2px;}
+
+  /* Weekly load bar inside phase accordion */
+  .week-row-v2{border-bottom:1px dashed var(--line);padding:10px 0;}
+  .week-row-v2:last-child{border-bottom:none;}
+  .week-row-v2.is-current{background:rgba(232,17,45,0.08);border-radius:10px;padding:10px 10px;margin:0 -10px;}
+  .wlh{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:6px;}
+  .wlh .wname{font-weight:700;}
+  .wlh .wload{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;}
+  .wload-bar{height:5px;background:var(--panel-alt);border-radius:3px;overflow:hidden;margin-bottom:8px;}
+  .wload-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--amber));border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>70.3 Program</h1>
+      <div class="sub">Built from your training data</div>
+    </div>
+  </div>
+  <a class="nav-link" href="index.html">&larr; Stats Dashboard</a>
+</header>
+
+<main>
+
+  <div class="panel hero-plan" id="heroPlan"></div>
+
+  <div class="panel today-hero" id="todayPanel"></div>
+
+  <div class="panel">
+    <h2>This Week</h2>
+    <div class="week-strip" id="weekStrip"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Where This Plan Starts From</h2>
+    <div class="baseline-grid" id="baselineGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Volume Roadmap</h2>
+    <canvas id="roadmapChart" height="120"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Full Program</h2>
+    <div style="margin-bottom:12px;"><button class="ghost" id="jumpToday">Jump to current week</button></div>
+    <div id="phaseAccordions"></div>
+  </div>
+
+</main>
+
+<footer>Program regenerates automatically from your race date and current phase &mdash; edit your race date on the Stats Dashboard and this updates too.</footer>
+
+<script>
+/* ---------------- GROUNDING DATA (from your logged history) ---------------- */
+// These are the real numbers established from your Strava/WHOOP data.
+// Update RACE_DATE here to match whatever's set on the Stats Dashboard.
+const RACE_DATE = localStorage.getItem('atlas703_racedate_v1') || '2027-06-13';
+const BASELINE = {
+  weeklyHrs: 1.8,           // avg weekly training hours, trailing 8 weeks, as of Aug 27 2026
+  runThresholdPace: '9:15/mi',   // rough estimate from Aug 18 run's embedded 5K/10K splits
+  runThresholdMinPerMi: 9.25,
+  swimPace100m: '1:43/100m',     // from your two most sustained swims (not a true CSS test)
+  ftpKnown: false,
+  maxHrObserved: 203,       // WHOOP-logged max (soccer), running max separately ~176
+  runMaxHr: 176,
+};
+
+/* ---------------- PHASE / PROGRAM DEFINITION ---------------- */
+const PHASES = [
+  {key:'foundation', name:'Foundation', weeks:12, sessionsPerWeek:4,
+   note:'Build the habit, fix swim technique, keep run/bike easy. Swim and bike get priority \u2014 they\'re furthest behind run in your logged volume.'},
+  {key:'base', name:'Base Build', weeks:10, sessionsPerWeek:5,
+   note:'Extend duration, introduce first bricks every 3rd week, add a real long run.'},
+  {key:'build1', name:'Build 1', weeks:9, sessionsPerWeek:5,
+   note:'Race-pace work using your actual thresholds, longer bricks every other week.'},
+  {key:'build2', name:'Build 2 / Peak', weeks:10, sessionsPerWeek:5,
+   note:'Peak volume, key long bricks matching race demands, tune-up race recommended mid-phase.'},
+  {key:'taper', name:'Taper', weeks:3, sessionsPerWeek:4,
+   note:'Cut volume, keep a little intensity, arrive fresh.'},
+];
+const TOTAL_WEEKS = PHASES.reduce((s,p)=>s+p.weeks,0);
+
+function addDays(date, days){ const d = new Date(date); d.setDate(d.getDate()+days); return d; }
+function fmtDate(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function lerp(min, max, t){ return Math.round(min + (max-min)*t); }
+
+// Session templates per phase: {dayOffset (0=Mon), sport, title, durRange:[startMin,endMin], detail(w,totalW)=>string}
+// Duration ranges are the WEEK-1 -> LAST-WEEK values for that phase; interpolated linearly across the phase.
+function phaseTemplate(phaseKey){
+  const rt = BASELINE.runThresholdPace, sp = BASELINE.swimPace100m;
+  switch(phaseKey){
+    case 'foundation': return [
+      {day:0, sport:'Swim', title:'Swim Technique', dur:[20,35], detail:'Drills + easy aerobic. No pace target yet \u2014 focus on catch, body position, breathing. Reference pace once comfortable: aim toward ' + sp + '.'},
+      {day:2, sport:'Run', title:'Easy Run', dur:[25,40], detail:`Conversational pace, well slower than threshold (${rt}) \u2014 target ~10:45\u201311:15/mi. Walk breaks fine.`},
+      {day:4, sport:'Bike', title:'Easy Bike', dur:[30,60], detail:'Zone 2 effort by feel (no FTP yet \u2014 should be able to hold a conversation the whole ride).'},
+      {day:5, sport:'Bike', title:'Long Bike (alt. Long Swim)', dur:[35,70], detail:'Longer easy bike \u2014 this is a big volume gap versus your run/strength history, so protect this session.', altOdd:{sport:'Swim', title:'Long Swim', dur:[30,45], detail:'Longer easy swim, building toward 500m continuous. Alternates with long bike on even weeks.'}},
+    ];
+    case 'base': return [
+      {day:0, sport:'Swim', title:'Swim + Intervals', dur:[25,40], detail:`Technique work plus short intervals (e.g. 8x50m). Target pace reference: ${sp}.`},
+      {day:2, sport:'Run', title:'Run w/ Strides', dur:[30,45], detail:`Easy base with 4-6 x 20sec strides. Keep bulk of the run 60-90sec/mi slower than ${rt}.`},
+      {day:4, sport:'Bike', title:'Bike Endurance', dur:[40,75], detail:'Zone 2, building duration. This is your biggest volume gap \u2014 protect this session.'},
+      {day:5, sport:'Bike', title:'Long Bike', dur:[45,90], detail:'Steady effort. Every 3rd week: add a 10-15min run off the bike (brick) right after dismounting.', brickEvery:3},
+      {day:6, sport:'Run', title:'Long Run', dur:[35,55], detail:`Easy/steady, slower than ${rt}. This becomes your longest run of the week.`},
+    ];
+    case 'build1': return [
+      {day:0, sport:'Swim', title:'Swim Intervals', dur:[30,45], detail:`Race-pace repeats at/near ${sp}, with rest. Building toward continuous 1900m later this phase.`},
+      {day:1, sport:'Run', title:'Tempo Run', dur:[35,50], detail:`Warm up easy, then sustained effort at/near threshold pace (${rt}) for the middle portion.`},
+      {day:3, sport:'Bike', title:'Bike Intervals', dur:[40,60], detail:'Effort-based intervals (hard/easy by feel) \u2014 get an FTP test done this phase if possible so these become power-based.'},
+      {day:5, sport:'Bike', title:'Long Bike + Race Pace', dur:[60,150], detail:'Long steady ride with race-effort surges. Every other week: 15-25min run off the bike after.', brickEvery:2},
+      {day:6, sport:'Run', title:'Long Run', dur:[45,75], detail:'Steady effort, building duration toward race demands.'},
+    ];
+    case 'build2': return [
+      {day:0, sport:'Swim', title:'Race-Pace Swim', dur:[35,50], detail:`Continuous swims building to the full 1900m race distance at/near ${sp}.`},
+      {day:1, sport:'Run', title:'Race-Pace Run', dur:[40,60], detail:`Tempo/threshold intervals at ${rt}, with race-effort surges.`},
+      {day:3, sport:'Bike', title:'Bike Tempo', dur:[45,60], detail:'Sustained tempo effort, race-simulation pacing.'},
+      {day:5, sport:'Bike', title:'KEY BRICK: Long Bike + Run', dur:[120,210], detail:'The most important session type in the whole plan. Ride most of race-day bike duration, then run 15-40min off the bike at race pace.', brickAlways:true, brickDur:[15,40]},
+      {day:6, sport:'Run', title:'Long Run', dur:[60,90], detail:'Peak long run of the plan. Consider an Olympic-distance tri or half-marathon as a tune-up race mid-phase.'},
+    ];
+    case 'taper': return [
+      {day:0, sport:'Swim', title:'Easy Swim', dur:[20,15], detail:'Short, easy, a few race-pace touches only. Volume drops, not intensity.'},
+      {day:2, sport:'Run', title:'Short Run + Strides', dur:[25,20], detail:'Short and easy with a few strides to stay sharp.'},
+      {day:4, sport:'Bike', title:'Easy Spin', dur:[30,25], detail:'Easy spin with a few short race-pace efforts. Legs should feel fresher each session.'},
+      {day:6, sport:'Rest', title:'Rest / Race Week Logistics', dur:[0,0], detail:'Gear check, course recon, sleep and nutrition dialed in. Final week: race day.'},
+    ];
+  }
+}
+
+/* ---------------- PROGRAM GENERATION ---------------- */
+function buildProgram(){
+  const race = new Date(RACE_DATE+'T00:00:00');
+  const planStart = addDays(race, -TOTAL_WEEKS*7);
+  // planStart is a Saturday-ish arbitrary date; snap to the Monday of that week for clean week boundaries
+  const dow = planStart.getDay(); // 0=Sun..6=Sat
+  const mondayOffset = dow===0 ? -6 : 1-dow;
+  const start = addDays(planStart, mondayOffset);
+
+  let weeks = [];
+  let cursor = new Date(start);
+  let globalWeekNum = 1;
+  PHASES.forEach(phase=>{
+    const template = phaseTemplate(phase.key);
+    for(let w=0; w<phase.weeks; w++){
+      const t = phase.weeks<=1 ? 0 : w/(phase.weeks-1);
+      const weekStart = new Date(cursor);
+      const sessions = [];
+      template.forEach(s=>{
+        let useTpl = s;
+        if(s.altOdd && (w%2===1)) useTpl = {...s, ...s.altOdd};
+        const dur = lerp(useTpl.dur[0], useTpl.dur[1], t);
+        const date = addDays(weekStart, s.day);
+        let isBrick = false, brickDur = 0;
+        if(s.brickAlways){ isBrick = true; brickDur = lerp(s.brickDur[0], s.brickDur[1], t); }
+        else if(s.brickEvery && (globalWeekNum % s.brickEvery === 0)){ isBrick = true; brickDur = 15; }
+        sessions.push({
+          date: isoDate(date), sport: useTpl.sport, title: useTpl.title,
+          duration: dur, detail: useTpl.detail, isBrick, brickDur
+        });
+      });
+      weeks.push({weekNum: globalWeekNum, phase: phase.key, phaseName: phase.name, phaseNote: phase.note, start: isoDate(weekStart), sessions});
+      cursor = addDays(cursor, 7);
+      globalWeekNum++;
+    }
+  });
+  return weeks;
+}
+
+const PROGRAM = buildProgram();
+
+/* ---------------- PROGRESS PERSISTENCE ---------------- */
+const DONE_KEY = 'atlas703_plan_done_v1';
+function loadDone(){ try { return JSON.parse(localStorage.getItem(DONE_KEY)) || {}; } catch(e){ return {}; } }
+function saveDone(d){ localStorage.setItem(DONE_KEY, JSON.stringify(d)); }
+let doneMap = loadDone();
+function sessionKey(s){ return `${s.date}_${s.sport}_${s.title}`; }
+function toggleDone(key){
+  doneMap[key] = !doneMap[key];
+  saveDone(doneMap);
+  renderAll();
+}
+
+/* ---------------- HELPERS ---------------- */
+function tagClass(sport){
+  return {Run:'tag-run',Bike:'tag-bike',Swim:'tag-swim',Strength:'tag-strength',Rest:'tag-rest'}[sport] || 'tag-rest';
+}
+function findWeekForDate(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return PROGRAM.find(w=>{
+    const ws = new Date(w.start+'T00:00:00');
+    const we = addDays(ws,6);
+    return d>=ws && d<=we;
+  });
+}
+
+/* ---------------- RENDER: BASELINE ---------------- */
+function renderBaseline(){
+  const el = document.getElementById('baselineGrid');
+  el.innerHTML = `
+    <div class="baseline-card"><div class="blabel">Current Volume</div><div class="bval">${BASELINE.weeklyHrs} hrs/wk</div><div class="bnote">trailing 8-week avg</div></div>
+    <div class="baseline-card"><div class="blabel">Run Threshold</div><div class="bval">${BASELINE.runThresholdPace}</div><div class="bnote">rough estimate, not tested</div></div>
+    <div class="baseline-card"><div class="blabel">Swim Pace</div><div class="bval">${BASELINE.swimPace100m}</div><div class="bnote">not true CSS yet</div></div>
+    <div class="baseline-card"><div class="blabel">Bike FTP</div><div class="bval">Unknown</div><div class="bnote">test needed \u2014 bike sessions are effort-based for now</div></div>
+  `;
+}
+
+/* ---------------- RENDER: TODAY ---------------- */
+function renderToday(){
+  const el = document.getElementById('todayPanel');
+  const todayStr = new Date().toISOString().slice(0,10);
+  const week = findWeekForDate(todayStr);
+  if(!week){
+    el.innerHTML = `<div class="rest-day">No program scheduled for today \u2014 outside the current plan window.</div>`;
+    return;
+  }
+  const session = week.sessions.find(s=>s.date===todayStr);
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+  if(!session){
+    el.innerHTML = `
+      <div class="today-date">${dateLabel} &middot; Week ${week.weekNum} &middot; ${week.phaseName}</div>
+      <div class="today-title">Rest Day</div>
+      <div class="today-detail">No prescribed session today. Recovery is part of the plan \u2014 light stretching or a walk is fine if you want to move.</div>
+    `;
+    return;
+  }
+  const key = sessionKey(session);
+  const isDone = !!doneMap[key];
+  el.innerHTML = `
+    <div class="today-date">${dateLabel} &middot; Week ${week.weekNum} &middot; ${week.phaseName}</div>
+    <div class="today-title">${session.title}${session.isBrick?' + Brick':''}</div>
+    <div class="today-detail">${session.detail}</div>
+    <div class="today-meta">
+      <div><div class="tlabel">Sport</div><div class="tval">${session.sport}</div></div>
+      <div><div class="tlabel">Duration</div><div class="tval">${session.duration} min${session.isBrick? ' + '+session.brickDur+'min run':''}</div></div>
+    </div>
+    <button class="primary ${isDone?'done':''}" onclick="toggleDone('${key}')">${isDone?'\u2713 Completed':'Mark Complete'}</button>
+  `;
+}
+
+/* ---------------- RENDER: WEEK STRIP ---------------- */
+/* ---------------- RENDER: HERO PLAN CARD ---------------- */
+function renderHeroPlan(){
+  const el = document.getElementById('heroPlan');
+  const todayStr = new Date().toISOString().slice(0,10);
+  const currentWeek = findWeekForDate(todayStr);
+  const planStart = new Date(PROGRAM[0].start+'T00:00:00');
+  const planEndWeek = PROGRAM[PROGRAM.length-1];
+  const planEnd = addDays(new Date(planEndWeek.start+'T00:00:00'), 6);
+  const weekNum = currentWeek ? currentWeek.weekNum : (new Date()<planStart ? 0 : TOTAL_WEEKS);
+  const pct = Math.max(0, Math.min(100, (weekNum/TOTAL_WEEKS)*100));
+  el.innerHTML = `
+    <div class="hlabel">Triathlon &middot; Half Ironman 70.3</div>
+    <div class="htitle">Training Plan</div>
+    <div class="hrange">${planStart.toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'})} &rarr; ${planEnd.toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div class="hweek">${weekNum>0 ? `Week ${weekNum} of ${TOTAL_WEEKS}` : 'Starts soon'}</div>
+    <div class="hero-bar"><div class="hero-bar-fill" style="width:${pct}%;"></div></div>
+  `;
+}
+
+const SPORT_TINT = {Run:'tint-run', Bike:'tint-bike', Swim:'tint-swim', Strength:'tint-strength'};
+
+function renderWeekStrip(){
+  const el = document.getElementById('weekStrip');
+  const todayStr = new Date().toISOString().slice(0,10);
+  const week = findWeekForDate(todayStr) || PROGRAM[0];
+  const days = [];
+  for(let i=0;i<7;i++){
+    const d = addDays(new Date(week.start+'T00:00:00'), i);
+    const dateStr = isoDate(d);
+    const session = week.sessions.find(s=>s.date===dateStr);
+    days.push({date:dateStr, dname:d.toLocaleDateString('en-US',{weekday:'short'}), session});
+  }
+  el.innerHTML = days.map(day=>{
+    const isToday = day.date===todayStr;
+    const key = day.session ? sessionKey(day.session) : null;
+    const isDone = key && !!doneMap[key];
+    const sportLabel = day.session ? day.session.sport : 'Rest';
+    const tint = day.session ? (SPORT_TINT[sportLabel]||'') : '';
+    return `<div class="day-card ${tint} ${isToday?'today':''} ${isDone?'done':''}">
+      <div>
+        <div class="dname">${day.dname}</div>
+        <div class="ddate">${fmtDate(new Date(day.date+'T00:00:00'))}</div>
+        ${day.session ? `<div class="dtag2">${sportLabel}</div>` : `<span class="dtag tag-rest">Rest</span>`}
+      </div>
+      <div>
+        <div class="ddur">${day.session ? day.session.duration+'m' : '\u2014'}</div>
+        ${key ? `<div class="dcheck" style="cursor:pointer;" onclick="toggleDone('${key}')">${isDone?'\u2705':'\u2b1c'}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- RENDER: ROADMAP CHART ---------------- */
+let roadmapChart;
+function renderRoadmap(){
+  const labels = PROGRAM.map(w=>'W'+w.weekNum);
+  const hours = PROGRAM.map(w=> +(w.sessions.reduce((s,x)=>s+x.duration+(x.brickDur||0),0)/60).toFixed(1));
+  const todayStr = new Date().toISOString().slice(0,10);
+  const currentWeek = findWeekForDate(todayStr);
+  const pointColors = PROGRAM.map(w=> currentWeek && w.weekNum===currentWeek.weekNum ? '#ff6a3d' : '#e8112d');
+  if(roadmapChart) roadmapChart.destroy();
+  roadmapChart = new Chart(document.getElementById('roadmapChart'), {
+    type:'line',
+    data:{labels, datasets:[{label:'Planned hours/week', data:hours, borderColor:'#e8112d', backgroundColor:'rgba(232,17,45,0.1)', tension:0.3, fill:true, pointRadius:2, pointBackgroundColor:pointColors}]},
+    options:{responsive:true,
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:9},maxTicksLimit:12}, grid:{color:'#2e2e34'}},
+        y:{ticks:{color:'#9a9aa2'}, grid:{color:'#2e2e34'}, title:{display:true,text:'hrs',color:'#9a9aa2'}}
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+/* ---------------- RENDER: FULL PROGRAM ACCORDION ---------------- */
+function weekLoad(w){
+  // simple training-load proxy: total minutes weighted by phase intensity
+  const intensity = {foundation:0.8, base:1.0, build1:1.15, build2:1.3, taper:0.7}[w.phase] || 1;
+  const totalMin = w.sessions.reduce((s,x)=>s+x.duration+(x.brickDur||0),0);
+  return Math.round(totalMin * intensity);
+}
+function renderAccordion(){
+  const el = document.getElementById('phaseAccordions');
+  const byPhase = {};
+  PROGRAM.forEach(w=>{ (byPhase[w.phase] = byPhase[w.phase]||[]).push(w); });
+  const todayStr = new Date().toISOString().slice(0,10);
+  const currentWeek = findWeekForDate(todayStr);
+  const allLoads = PROGRAM.map(weekLoad);
+  const maxLoad = Math.max(...allLoads, 1);
+
+  el.innerHTML = PHASES.map(phase=>{
+    const weeks = byPhase[phase.key];
+    const start = weeks[0].start, end = isoDate(addDays(new Date(weeks[weeks.length-1].start+'T00:00:00'),6));
+    const avgHrsWk = (weeks.reduce((s,w)=>s+w.sessions.reduce((ss,x)=>ss+x.duration+(x.brickDur||0),0),0)/weeks.length/60).toFixed(1);
+    const isCurrentPhase = currentWeek && currentWeek.phase===phase.key;
+    const weeksHtml = weeks.map(w=>{
+      const load = weekLoad(w);
+      const barPct = Math.round((load/maxLoad)*100);
+      const isCurrent = currentWeek && w.weekNum===currentWeek.weekNum;
+      const hrs = (w.sessions.reduce((s,x)=>s+x.duration+(x.brickDur||0),0)/60).toFixed(1);
+      return `
+      <div class="week-row-v2 ${isCurrent?'is-current':''}" id="week-${w.weekNum}">
+        <div class="wlh"><span class="wname">Week ${w.weekNum} &middot; ${fmtDate(new Date(w.start+'T00:00:00'))} &middot; ${hrs}h</span><span class="wload">${load}</span></div>
+        <div class="wload-bar"><div class="wload-bar-fill" style="width:${barPct}%;"></div></div>
+        ${w.sessions.map(s=>`<div class="sess-line"><span class="sname">${s.sport}: ${s.title}${s.isBrick?' + Brick':''}</span><span class="sdur">${s.duration}${s.isBrick?'+'+s.brickDur:''} min</span></div>`).join('')}
+      </div>`;
+    }).join('');
+    return `<div class="phase-accordion" ${isCurrentPhase?'style="border-color:var(--cyan);"':''}>
+      <div class="phase-head" onclick="this.nextElementSibling.classList.toggle('open')">
+        <div>
+          <span class="phase-badge ${phase.key}">${phase.name}</span>
+          <div class="pdate" style="margin-top:6px;">${fmtDate(new Date(start+'T00:00:00'))} \u2192 ${fmtDate(new Date(end+'T00:00:00'))} &middot; ${phase.note}</div>
+        </div>
+        <div class="mono" style="color:var(--muted);font-size:11px;white-space:nowrap;">${weeks.length}wk &middot; ${avgHrsWk}h/wk</div>
+      </div>
+      <div class="phase-body">${weeksHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('jumpToday').addEventListener('click', ()=>{
+  const todayStr = new Date().toISOString().slice(0,10);
+  const week = findWeekForDate(todayStr);
+  if(!week) return;
+  document.querySelectorAll('.phase-body').forEach(b=>b.classList.add('open'));
+  setTimeout(()=>{
+    const target = document.getElementById('week-'+week.weekNum);
+    if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 50);
+});
+
+function renderAll(){
+  renderHeroPlan();
+  renderBaseline();
+  renderToday();
+  renderWeekStrip();
+  renderRoadmap();
+  renderAccordion();
+  autoExpandCurrentPhase();
+}
+function autoExpandCurrentPhase(){
+  const todayStr = new Date().toISOString().slice(0,10);
+  const currentWeek = findWeekForDate(todayStr);
+  if(!currentWeek) return;
+  const accordions = document.querySelectorAll('.phase-accordion');
+  const byPhase = {};
+  PROGRAM.forEach(w=>{ (byPhase[w.phase] = byPhase[w.phase]||[]).push(w); });
+  const phaseKeys = Object.keys(byPhase);
+  const idx = PHASES.findIndex(p=>p.key===currentWeek.phase);
+  if(idx>=0 && accordions[idx]){
+    accordions[idx].querySelector('.phase-body').classList.add('open');
+  }
+}
+renderAll();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+
+</body>
+</html>
 
 .brand .mark{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--blue));box-shadow:0 0 14px rgba(232,17,45,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   .brand .mark::after{content:'';width:10px;height:10px;border-radius:50%;background:#050506;}
