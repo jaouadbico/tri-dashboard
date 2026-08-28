@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Jaouad's 70.3 — Coach</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="70.3 Coach">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
+    --text:#f5f5f6; --muted:#9a9aa2;
+    --cyan:#4d94ff; --amber:#ff6a3d; --blue:#f5f5f6; --slate:#9a9aa2; --red:#c81e3a; --green:#34c759;
+    --purple:#8a1c2b; --purple-bright:#c23b52;
+    --radius:18px; --radius-lg:22px;
+    --shadow: 0 8px 28px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding-bottom:env(safe-area-inset-bottom,0px);
+       background-image:radial-gradient(circle at 12% 0%, rgba(77,148,255,0.10), transparent 40%),
+                         radial-gradient(circle at 88% 6%, rgba(138,28,43,0.08), transparent 38%);}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:var(--cyan);text-decoration:none;}
+
+  header{margin:calc(env(safe-area-inset-top,0px) + 10px) 10px 14px;padding:12px 16px;border:1px solid var(--line);border-radius:26px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:linear-gradient(180deg, var(--panel-alt), var(--panel));box-shadow:var(--shadow);}
+  @media (min-width:600px){ header{margin:22px 28px 20px;padding:14px 22px;border-radius:999px;} }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, var(--cyan), var(--purple-bright));box-shadow:0 0 14px rgba(77,148,255,0.55);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .brand .mark::after{content:'';width:10px;height:10px;border-radius:50%;background:#050506;}
+  .brand h1{font-size:clamp(13px,3.6vw,19px);margin:0;text-transform:uppercase;letter-spacing:0.02em;}
+  .brand .sub{color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:0.08em;}
+  .nav-link{font-size:11px;border:1px solid var(--line);padding:7px 13px;border-radius:999px;color:var(--muted);white-space:nowrap;}
+  .nav-link:hover{color:var(--text);border-color:var(--muted);}
+
+  main{max-width:900px;margin:0 auto;padding:0 16px 60px;}
+  @media (min-width:600px){ main{padding:0 28px 60px;} }
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
+  @media (min-width:560px){ .panel{padding:22px 24px;} }
+  .panel h2{font-family:'Rajdhani',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:0.06em;margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple-bright));display:inline-block;flex-shrink:0;}
+
+  .coach-hero{background:linear-gradient(135deg, rgba(77,148,255,0.15), rgba(138,28,43,0.18));border-color:var(--cyan);}
+  .coach-hero .clabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+  .coach-hero h1.ctitle{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(20px,5.5vw,27px);margin:6px 0 12px;}
+  .coach-hero .assessment{font-size:13.5px;line-height:1.7;color:var(--text);}
+  .gen-time{font-size:10px;color:var(--muted);margin-top:14px;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media (min-width:600px){ .kpi-grid{grid-template-columns:repeat(4,1fr);} }
+  .kpi-card{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .kpi-label{font-size:9.5px;text-transform:uppercase;color:var(--muted);letter-spacing:0.06em;}
+  .kpi-val{font-size:22px;font-weight:700;margin-top:4px;font-family:'JetBrains Mono',monospace;}
+  .kpi-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+  .kpi-zone{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-top:6px;}
+  .zone-under{background:rgba(255,106,61,0.18);color:var(--amber);}
+  .zone-sweet{background:rgba(52,199,89,0.18);color:var(--green);}
+  .zone-spike{background:rgba(200,30,58,0.22);color:#ff8a94;}
+  .trend-up{color:var(--green);}
+  .trend-down{color:var(--amber);}
+
+  .rec-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media (min-width:700px){ .rec-grid{grid-template-columns:1fr 1fr;} }
+  .rec-card{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .rec-head{display:flex;align-items:center;gap:8px;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;font-size:13px;margin-bottom:10px;}
+  .rec-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+  .rec-list{margin:0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--text);}
+  .rec-list li{margin-bottom:8px;}
+  .rec-list li:last-child{margin-bottom:0;}
+
+  .refresh-note{font-size:11px;color:var(--muted);text-align:center;padding:14px;border-top:1px solid var(--line);margin-top:6px;}
+  .empty{color:var(--muted);font-size:12px;text-align:center;padding:30px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>70.3 Coach</h1>
+      <div class="sub">AI training analysis</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="index.html" class="nav-link">Stats Dashboard</a>
+    <a href="plan.html" class="nav-link">Program</a>
+  </div>
+</header>
+
+<main id="mainContent">
+  <div class="empty">Loading analysis&hellip;</div>
+</main>
+
+<script>
+async function loadCoach(){
+  const main = document.getElementById('mainContent');
+  let data;
+  try{
+    const res = await fetch('coach.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('not found');
+    data = await res.json();
+  }catch(e){
+    main.innerHTML = `<div class="panel"><div class="empty">No coach.json found yet. Ask Claude to generate your latest analysis and upload coach.json alongside this page.</div></div>`;
+    return;
+  }
+  render(data);
+}
+
+function acwrZoneInfo(acwr){
+  if(acwr < 0.8) return {label:'Undertrained', cls:'zone-under'};
+  if(acwr <= 1.3) return {label:'Sweet Spot', cls:'zone-sweet'};
+  return {label:'Spike Risk', cls:'zone-spike'};
+}
+
+function render(data){
+  const k = data.kpis;
+  const zone = acwrZoneInfo(k.acwr);
+  const hrvUp = k.hrv7d > k.hrvPrior21d;
+  const rhrDown = k.rhr7d < k.rhrPrior21d;
+  const genDate = new Date(data.generatedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+
+  const recCategories = [
+    {key:'loadManagement', title:'Load Management', icon:'\u2696\uFE0F', color:'#4d94ff'},
+    {key:'swimming', title:'Swimming', icon:'\u{1F3CA}', color:'#5ac8fa'},
+    {key:'cycling', title:'Cycling', icon:'\u{1F6B4}', color:'#ff2d95'},
+    {key:'running', title:'Running', icon:'\u{1F3C3}', color:'#ff9500'},
+    {key:'recovery', title:'Recovery', icon:'\u{1F634}', color:'#34c759'},
+  ];
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="panel coach-hero">
+      <div class="clabel">Coach's Assessment</div>
+      <h1 class="ctitle">Where Things Stand</h1>
+      <div class="assessment">${data.assessment}</div>
+      <div class="gen-time">Generated ${genDate}</div>
+    </div>
+
+    <div class="panel">
+      <h2>Key Metrics</h2>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Training Load (7d)</div>
+          <div class="kpi-val">${k.trainingLoad7d}<span style="font-size:12px;color:var(--muted);"> ${k.trainingLoadUnit}</span></div>
+          <div class="kpi-sub">vs ${k.chronicWeeklyAvg} min/wk (28d avg)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">ACWR</div>
+          <div class="kpi-val">${k.acwr}</div>
+          <span class="kpi-zone ${zone.cls}">${zone.label}</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">HRV Trend</div>
+          <div class="kpi-val ${hrvUp?'trend-up':'trend-down'}">${k.hrv7d}<span style="font-size:12px;color:var(--muted);"> ms</span></div>
+          <div class="kpi-sub">${hrvUp?'\u2191':'\u2193'} vs ${k.hrvPrior21d}ms prior 21d</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Resting HR Trend</div>
+          <div class="kpi-val ${rhrDown?'trend-up':'trend-down'}">${k.rhr7d}<span style="font-size:12px;color:var(--muted);"> bpm</span></div>
+          <div class="kpi-sub">${rhrDown?'\u2193':'\u2191'} vs ${k.rhrPrior21d}bpm prior 21d</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Sport-Specific Recommendations</h2>
+      <div class="rec-grid">
+        ${recCategories.map(cat=>{
+          const items = data.recommendations[cat.key] || [];
+          return `<div class="rec-card">
+            <div class="rec-head"><span class="rec-icon" style="background:${cat.color}22;color:${cat.color};">${cat.icon}</span>${cat.title}</div>
+            <ul class="rec-list">${items.map(i=>`<li>${i}</li>`).join('')}</ul>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="refresh-note">This analysis is generated from your real Strava + WHOOP data on request &mdash; ask Claude to "update my coach analysis" any time for a fresh read.</div>
+  `;
+}
+
+loadCoach();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

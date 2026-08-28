@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-08-27T21:30:00Z",
+  "kpis": {
+    "trainingLoad7d": 87,
+    "trainingLoadUnit": "min",
+    "chronicWeeklyAvg": 136.5,
+    "acwr": 0.64,
+    "acwrZone": "undertrained",
+    "hrv7d": 48.7,
+    "hrvPrior21d": 42.0,
+    "rhr7d": 57.0,
+    "rhrPrior21d": 59.9,
+    "sleepDebtAvgMin": 18.4
+  },
+  "assessment": "You're under-loaded relative to where you'll need to be for June, but your body has real recovery capacity in reserve. ACWR of 0.64 (sweet spot is 0.8-1.3) combined with HRV trending up (48.7ms vs 42.0ms three weeks ago) and resting HR trending down (57 vs 59.9 bpm) tells a consistent story: training stress is currently too low to be the limiting factor, recovery isn't. The Foundation phase calls for gradually building volume, and the data supports pushing that ramp harder, especially in swim and bike where historical volume is thinnest. Priority for the next few weeks: lock in a second weekly bike ride and keep the swim frequency you just hit (4 sessions in one week was a real step up) rather than adding intensity anywhere yet.",
+  "recommendations": {
+    "loadManagement": [
+      "ACWR at 0.64 is below the 0.8-1.3 sweet spot \u2014 you have room to add volume without spiking injury risk; the bigger risk right now is under-training relative to a 70.3 in June.",
+      "8-week average of 1.8 hrs/wk needs to roughly double to hit Base Build phase targets \u2014 build this gradually, not in one jump."
+    ],
+    "swimming": [
+      "Swim remains your lowest historical volume, though the last week (4 sessions) was a real step up \u2014 keep that frequency, 2-3x/week minimum going forward.",
+      "No CSS test done yet \u2014 schedule the 400m/200m field test in the next couple weeks to replace the rough 1:43/100m estimate with a real number."
+    ],
+    "cycling": [
+      "Only one ride logged this whole cycle \u2014 this is the single biggest volume gap versus race demands (90km bike leg). Getting a 2nd weekly ride established is the highest-leverage change available right now.",
+      "No FTP test done \u2014 bike sessions stay effort-based until you test. Worth doing once ride frequency is more consistent."
+    ],
+    "running": [
+      "Strongest discipline by both volume and threshold data (5K/10K splits from the Aug 18 long run). Maintain current frequency.",
+      "Main risk here is running crowding out swim/bike attention since it's the easiest habit \u2014 don't let it eat the time budget the other two disciplines need."
+    ],
+    "recovery": [
+      "HRV and RHR trends are both favorable \u2014 body is adapting well to current load.",
+      "Recovery dipped to 64% after the Aug 18 long run + Aug 20 sessions \u2014 a normal short-term dip given the trend is positive overall, not a concern on its own.",
+      "Sleep debt averaging ~18 min/night is minor but worth protecting as volume increases in the coming weeks."
+    ]
+  }
+}
