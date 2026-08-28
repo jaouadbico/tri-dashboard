@@ -122,6 +122,13 @@
   .wo-tags{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;}
   .wo-tag{font-size:9.5px;text-transform:uppercase;font-weight:700;letter-spacing:0.03em;padding:2px 9px;border-radius:999px;}
   .wo-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:10px;margin-top:8px;}
+  .actual-card{margin-top:12px;background:rgba(52,199,89,0.08);border:1px solid rgba(52,199,89,0.3);border-radius:12px;padding:10px 12px;}
+  .actual-head{font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:6px;}
+  .actual-check{background:var(--green);color:#04210f;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+  .actual-stats{display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;}
+  .actual-stat{display:flex;flex-direction:column;}
+  .actual-stat .alabel{font-size:9px;text-transform:uppercase;color:var(--muted);letter-spacing:0.05em;}
+  .actual-stat .aval{font-size:12.5px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;}
   .wo-stat{}
   .wo-stat-label{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;}
   .wo-stat-val{font-size:13px;font-weight:700;margin-top:2px;}
@@ -582,6 +589,25 @@ function actualMinutes(sport, startDate, endDate){
 function hasActualOnDate(sport, date){
   return syncedWorkouts.some(w => w.sport===sport && w.date===date);
 }
+function findActual(sport, date){
+  return syncedWorkouts.find(w => w.sport===sport && w.date===date) || null;
+}
+function actualPace(w){
+  if(!w.duration) return null;
+  if(w.sport==='Run' && w.distance){
+    const pace = w.duration/w.distance;
+    return fmtPaceMinPerMi(pace)+'/mi';
+  }
+  if(w.sport==='Bike' && w.distance){
+    const kmh = (w.distance*1.60934)/(w.duration/60);
+    return kmh.toFixed(1)+' km/h';
+  }
+  if(w.sport==='Swim' && w.distance){
+    const paceMin = w.duration/((w.distance*1609.34)/100);
+    return fmtPaceMinPerMi(paceMin)+'/100m';
+  }
+  return null;
+}
 
 /* ---------------- PROGRESS PERSISTENCE ---------------- */
 const DONE_KEY = 'atlas703_plan_done_v1';
@@ -741,6 +767,7 @@ function renderDayList(week, todayStr){
     const key = sessionKey(s);
     const autoDone = hasActualOnDate(s.sport, s.date);
     const isDone = !!doneMap[key] || autoDone;
+    const actual = autoDone ? findActual(s.sport, s.date) : null;
     const m = sessionMetrics(s, week.phase);
     const structId = `dstruct-${idx}`;
     const structHtml = (s.structure||[]).map(seg=>`
@@ -751,6 +778,15 @@ function renderDayList(week, todayStr){
         <div class="swap-box"><div class="swap-label">If you want more</div><div class="swap-text">${s.swap.harder}</div></div>
       </div>` : '';
     const coachTip = s.structure && s.structure.length ? s.structure[s.structure.length>2?1:0].text : s.detail;
+    const actualHtml = actual ? `
+      <div class="actual-card">
+        <div class="actual-head"><span class="actual-check">\u2713</span> ${actual.notes || (actual.sport+' logged')}</div>
+        <div class="actual-stats">
+          <div class="actual-stat"><span class="alabel">Time</span><span class="aval">${actual.duration} min</span></div>
+          ${actual.distance ? `<div class="actual-stat"><span class="alabel">Distance</span><span class="aval">${(actual.distance*1.60934).toFixed(1)} km</span></div>` : ''}
+          ${actualPace(actual) ? `<div class="actual-stat"><span class="alabel">Pace</span><span class="aval">${actualPace(actual)}</span></div>` : ''}
+        </div>
+      </div>` : '';
     return `<div class="day-row">
       <div class="day-row-head ${isToday?'is-today':''}">${isToday?'TODAY \u00b7 ':''}${dayLabel}</div>
       <div class="wo-card ${isDone?'completed':''}" onclick="document.getElementById('${structId}').classList.toggle('open')">
@@ -771,6 +807,7 @@ function renderDayList(week, todayStr){
           <div class="wo-stat"><div class="wo-stat-label">\u{1F3AF} Est. Pace</div><div class="wo-stat-val" style="font-size:11px;">${m.estPace||'\u2014'}</div></div>
           <div class="wo-stat"><div class="wo-stat-label">\u26F0\uFE0F Load</div><div class="wo-stat-val">${m.load}<span class="unit">/10</span></div></div>
         </div>
+        ${actualHtml}
         <div class="wo-structure sess-struct" id="${structId}">
           ${structHtml}
           ${swapHtml}
