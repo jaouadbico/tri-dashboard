@@ -287,6 +287,46 @@
     </div>
   </div>
 
+  <div class="panel" style="border-color:rgba(74,222,128,0.3);">
+    <h2 style="--tw:0;"><span style="width:3px;height:14px;background:#4ade80;display:inline-block;margin-right:-4px;"></span>Recovery & Readiness — Garmin</h2>
+    <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;" id="garminAvgLabel"></div>
+    <div class="ring-row" id="garminRings"></div>
+    <div class="stat-grid" id="garminStats"></div>
+    <div class="grid-charts" style="margin-top:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Training Readiness vs Stress</div>
+        <canvas id="garminTrendChart" height="180"></canvas>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">HRV vs Resting HR</div>
+        <canvas id="garminHrvChart" height="180"></canvas>
+      </div>
+    </div>
+    <span class="mphase" style="color:#4ade80;">Log Today's Garmin Data</span>
+    <div class="form-row three">
+      <div><label>Date</label><input type="date" id="gaDate"></div>
+      <div><label>Training Readiness</label><input type="number" id="gaReadiness" min="0" max="100" placeholder="81"></div>
+      <div><label>Body Battery Low \u2192 High</label><input type="text" id="gaBattery" placeholder="38 89"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Resting HR (bpm)</label><input type="number" id="gaRhr" placeholder="48"></div>
+      <div><label>HRV (ms)</label><input type="number" id="gaHrv" placeholder="72"></div>
+      <div><label>Sleep (hrs / score)</label><input type="text" id="gaSleep" placeholder="7.7 84"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Stress (avg)</label><input type="number" id="gaStress" placeholder="31"></div>
+      <div><label>Steps</label><input type="number" id="gaSteps" placeholder="11248"></div>
+      <div></div>
+    </div>
+    <button class="primary" id="addGarminBtn" style="background:linear-gradient(135deg,#4ade80,var(--blue));color:#052e16;">Log Garmin Data</button>
+    <div class="table-wrap" style="margin-top:16px;">
+      <table id="garminTable">
+        <thead><tr><th>Date</th><th>Readiness</th><th>RHR</th><th>HRV</th><th>Sleep</th><th>Battery</th><th>Stress</th><th>Steps</th><th></th></tr></thead>
+        <tbody id="garminBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="grid-charts">
     <div class="panel">
       <h2>Athlete Profile &amp; Nutrition</h2>
@@ -632,6 +672,44 @@ async function loadSyncedWhoop(){
     syncedWhoop = SEED_WHOOP.slice();
   }
   rebuildWhoop();
+}
+
+/* ---------------- GARMIN STATE ---------------- */
+const GARMIN_MANUAL_KEY = 'atlas703_garmin_manual_v1';
+function loadGarminManual(){
+  const raw = localStorage.getItem(GARMIN_MANUAL_KEY);
+  if(raw){ try { return JSON.parse(raw); } catch(e){ return []; } }
+  return [];
+}
+function saveGarminManual(g){ localStorage.setItem(GARMIN_MANUAL_KEY, JSON.stringify(g)); }
+
+const SEED_GARMIN = [
+  {date:'2026-08-25', restingHr:48, hrv:72, sleepHours:7.7, sleepScore:84, bodyBatteryLow:38, bodyBatteryHigh:89, stressAvg:31, steps:11248, trainingReadiness:81},
+  {date:'2026-08-26', restingHr:50, hrv:68, sleepHours:6.9, sleepScore:76, bodyBatteryLow:30, bodyBatteryHigh:82, stressAvg:34, steps:9820,  trainingReadiness:74},
+  {date:'2026-08-27', restingHr:49, hrv:70, sleepHours:7.9, sleepScore:88, bodyBatteryLow:42, bodyBatteryHigh:91, stressAvg:27, steps:10534, trainingReadiness:85},
+];
+
+let syncedGarmin = [];
+let manualGarmin = loadGarminManual();
+let garminEntries = [];
+
+function rebuildGarmin(){
+  const byDate = {};
+  syncedGarmin.forEach(g => byDate[g.date] = {...g, source:'sync'});
+  manualGarmin.forEach(g => byDate[g.date] = {...g, source:'manual'});
+  garminEntries = Object.values(byDate).sort((a,b)=> new Date(a.date)-new Date(b.date));
+}
+
+async function loadSyncedGarmin(){
+  try{
+    const res = await fetch('garmin.json', {cache:'no-store'});
+    if(!res.ok) throw new Error('no garmin.json');
+    const data = await res.json();
+    syncedGarmin = data.entries || [];
+  }catch(e){
+    syncedGarmin = SEED_GARMIN.slice();
+  }
+  rebuildGarmin();
 }
 
 /* ---------------- PHASE MATH ---------------- */
@@ -1455,6 +1533,168 @@ document.getElementById('addWhoopBtn').addEventListener('click', ()=>{
   renderAll();
 });
 
+/* ---------------- GARMIN RENDERING ---------------- */
+let garminTrendChart, garminHrvChart;
+
+function garminAvg(field, n){
+  const recent = garminEntries.slice(-n).filter(e => e[field] != null);
+  if(!recent.length) return null;
+  return recent.reduce((s,e)=>s+e[field],0) / recent.length;
+}
+
+function renderGarmin(){
+  const latest = garminEntries.length ? garminEntries[garminEntries.length-1] : null;
+
+  const avgReadiness = garminAvg('trainingReadiness', 7);
+  document.getElementById('garminAvgLabel').textContent = avgReadiness != null
+    ? `7-day avg training readiness: ${avgReadiness.toFixed(0)}`
+    : 'No Garmin data yet \u2014 run sync_garmin.py or log manually below.';
+
+  const rings = document.getElementById('garminRings');
+  if(!latest){
+    rings.innerHTML = `<div class="empty">No Garmin data yet.</div>`;
+  } else {
+    const readiness = latest.trainingReadiness ?? 0;
+    const battery = latest.bodyBatteryHigh ?? 0;
+    const sleepScore = latest.sleepScore ?? 0;
+    rings.innerHTML = `
+      <div class="ring-card">
+        <div class="ring-wrap">${ringSVG(readiness, recoveryColor(readiness), 110)}<div class="ring-value-abs rvalue mono" style="color:${recoveryColor(readiness)};">${latest.trainingReadiness!=null?readiness:'\u2014'}</div></div>
+        <div class="rlabel">Readiness</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-wrap">${ringSVG(battery, recoveryColor(battery), 110)}<div class="ring-value-abs rvalue mono" style="color:${recoveryColor(battery)};">${latest.bodyBatteryHigh!=null?battery:'\u2014'}</div></div>
+        <div class="rlabel">Body Battery</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-wrap">${ringSVG(sleepScore, recoveryColor(sleepScore), 110)}<div class="ring-value-abs rvalue mono" style="color:${recoveryColor(sleepScore)};">${latest.sleepScore!=null?sleepScore:'\u2014'}</div></div>
+        <div class="rlabel">Sleep Score</div>
+      </div>
+    `;
+  }
+
+  const stats = document.getElementById('garminStats');
+  if(!latest){
+    stats.innerHTML = '';
+  } else {
+    stats.innerHTML = `
+      <div class="stat-mini"><div class="slabel">Resting HR</div><div class="sval">${latest.restingHr ?? '\u2014'}<span class="unit">bpm</span></div></div>
+      <div class="stat-mini"><div class="slabel">HRV</div><div class="sval">${latest.hrv ?? '\u2014'}<span class="unit">ms</span></div></div>
+      <div class="stat-mini"><div class="slabel">Sleep</div><div class="sval">${latest.sleepHours ?? '\u2014'}<span class="unit">hrs</span></div></div>
+      <div class="stat-mini"><div class="slabel">Stress (avg)</div><div class="sval">${latest.stressAvg ?? '\u2014'}</div></div>
+      <div class="stat-mini"><div class="slabel">Steps</div><div class="sval">${latest.steps != null ? latest.steps.toLocaleString() : '\u2014'}</div></div>
+    `;
+  }
+
+  renderGarminTrendChart();
+  renderGarminHrvChart();
+  renderGarminTable();
+}
+
+function renderGarminTrendChart(){
+  const recent = garminEntries.slice(-30);
+  const labels = recent.map(e=>e.date.slice(5));
+  if(garminTrendChart) garminTrendChart.destroy();
+  garminTrendChart = new Chart(document.getElementById('garminTrendChart'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Training Readiness', data: recent.map(e=>e.trainingReadiness ?? null),
+        borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.12)', tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
+      {label:'Stress (avg)', data: recent.map(e=>e.stressAvg ?? null),
+        borderColor:'#ff6a3d', backgroundColor:'rgba(255,106,61,0.1)', tension:0.3, pointRadius:2, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:9},maxTicksLimit:8}, grid:{color:'#2e2e34'}},
+        y:{position:'left', min:0, max:100, ticks:{color:'#4ade80',font:{size:10}}, grid:{color:'#2e2e34'}, title:{display:true,text:'Readiness',color:'#4ade80',font:{size:10}}},
+        y1:{position:'right', min:0, max:100, ticks:{color:'#ff6a3d',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'Stress',color:'#ff6a3d',font:{size:10}}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:10},boxWidth:12}}}
+    }
+  });
+}
+
+function renderGarminHrvChart(){
+  const recent = garminEntries.slice(-30);
+  const labels = recent.map(e=>e.date.slice(5));
+  if(garminHrvChart) garminHrvChart.destroy();
+  garminHrvChart = new Chart(document.getElementById('garminHrvChart'), {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'HRV (ms)', data: recent.map(e=>e.hrv ?? null),
+        borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.12)', tension:0.3, fill:true, pointRadius:2, yAxisID:'y'},
+      {label:'Resting HR (bpm)', data: recent.map(e=>e.restingHr ?? null),
+        borderColor:'#e8112d', backgroundColor:'rgba(232,17,45,0.1)', tension:0.3, pointRadius:2, yAxisID:'y1'}
+    ]},
+    options:{responsive:true, interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#9a9aa2',font:{size:9},maxTicksLimit:8}, grid:{color:'#2e2e34'}},
+        y:{position:'left', ticks:{color:'#4ade80',font:{size:10}}, grid:{color:'#2e2e34'}, title:{display:true,text:'ms',color:'#4ade80',font:{size:10}}},
+        y1:{position:'right', ticks:{color:'#e8112d',font:{size:10}}, grid:{drawOnChartArea:false}, title:{display:true,text:'bpm',color:'#e8112d',font:{size:10}}}
+      },
+      plugins:{legend:{labels:{color:'#f5f5f6',font:{size:10},boxWidth:12}}}
+    }
+  });
+}
+
+function renderGarminTable(){
+  const body = document.getElementById('garminBody');
+  const sorted = garminEntries.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,60);
+  if(!sorted.length){ body.innerHTML = `<tr><td colspan="9"><div class="empty">No Garmin data yet.</div></td></tr>`; return; }
+  body.innerHTML = sorted.map(e=>{
+    const battery = (e.bodyBatteryLow!=null && e.bodyBatteryHigh!=null) ? `${e.bodyBatteryLow} \u2192 ${e.bodyBatteryHigh}` : '\u2014';
+    const delBtn = e.source==='manual'
+      ? `<button class="del-btn" onclick="deleteGarminEntry('${e.date}')">&times;</button>`
+      : `<span class="mono" style="color:var(--muted);font-size:11px;" title="From garmin.json">\u2713</span>`;
+    return `<tr>
+      <td class="mono">${e.date}</td>
+      <td class="mono" style="color:${recoveryColor(e.trainingReadiness)};font-weight:600;">${e.trainingReadiness ?? '\u2014'}</td>
+      <td class="mono">${e.restingHr ?? '\u2014'}</td>
+      <td class="mono" style="color:#4ade80;">${e.hrv ?? '\u2014'}</td>
+      <td class="mono">${e.sleepHours ?? '\u2014'}${e.sleepScore ? ' ('+e.sleepScore+')' : ''}</td>
+      <td class="mono">${battery}</td>
+      <td class="mono">${e.stressAvg ?? '\u2014'}</td>
+      <td class="mono">${e.steps != null ? e.steps.toLocaleString() : '\u2014'}</td>
+      <td>${delBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteGarminEntry(date){
+  const idx = manualGarmin.findIndex(e => e.date === date);
+  if(idx === -1){ alert('This entry came from garmin.json (sync). Delete it by re-running the sync with updated data instead.'); return; }
+  manualGarmin.splice(idx,1);
+  saveGarminManual(manualGarmin);
+  rebuildGarmin();
+  renderAll();
+}
+
+document.getElementById('addGarminBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('gaDate').value;
+  if(!date){ alert('Pick a date first.'); return; }
+  const num = id => { const v = document.getElementById(id).value; return v===''?null:parseFloat(v); };
+  const [battLow, battHigh] = (document.getElementById('gaBattery').value || '').split(/\s+/).map(Number);
+  const [sleepHrs, sleepScore] = (document.getElementById('gaSleep').value || '').split(/\s+/).map(Number);
+  const entry = {
+    date,
+    trainingReadiness: num('gaReadiness'),
+    restingHr: num('gaRhr'),
+    hrv: num('gaHrv'),
+    sleepHours: isNaN(sleepHrs) ? null : sleepHrs,
+    sleepScore: isNaN(sleepScore) ? null : sleepScore,
+    bodyBatteryLow: isNaN(battLow) ? null : battLow,
+    bodyBatteryHigh: isNaN(battHigh) ? null : battHigh,
+    stressAvg: num('gaStress'),
+    steps: num('gaSteps'),
+  };
+  const existing = manualGarmin.findIndex(g=>g.date===date);
+  if(existing>-1) manualGarmin[existing] = entry; else manualGarmin.push(entry);
+  saveGarminManual(manualGarmin);
+  rebuildGarmin();
+  ['gaReadiness','gaBattery','gaRhr','gaHrv','gaSleep','gaStress','gaSteps'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+});
+
 /* ---------------- INIT ---------------- */
 function renderSyncStatus(){
   const el = document.getElementById('syncStatus');
@@ -1478,6 +1718,7 @@ function renderAll(){
   renderWhoopStats();
   renderWhoopCharts();
   renderWhoopTable();
+  renderGarmin();
   renderNutrition();
   renderZones();
   renderLoadChart();
@@ -1489,9 +1730,10 @@ async function init(){
   document.getElementById('wDate').value = today;
   document.getElementById('whDate').value = today;
   document.getElementById('lDate').value = today;
+  document.getElementById('gaDate').value = today;
   initProfileForm();
   updateSportFields();
-  await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop()]);
+  await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop(), loadSyncedGarmin()]);
   renderAll();
 }
 init();
