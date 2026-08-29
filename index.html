@@ -167,8 +167,6 @@
   /* Workout detail badges in log table */
   .badge-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
   .badge{font-size:9.5px;background:var(--panel-alt);border:1px solid var(--line);border-radius:20px;padding:1px 7px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
-  .sport-fields{display:none;}
-  .sport-fields.active{display:grid;}
 
   /* Strength training overview */
   .st-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
@@ -261,24 +259,6 @@
       </div>
     </div>
 
-    <span class="mphase" style="color:var(--purple-bright);">Log Today's WHOOP Data</span>
-    <div class="form-row three">
-      <div><label>Date</label><input type="date" id="whDate"></div>
-      <div><label>Recovery %</label><input type="number" id="whRecovery" min="0" max="100" placeholder="89"></div>
-      <div><label>Strain (0-21)</label><input type="number" step="0.1" id="whStrain" min="0" max="21" placeholder="4.1"></div>
-    </div>
-    <div class="form-row three">
-      <div><label>Sleep %</label><input type="number" id="whSleep" min="0" max="100" placeholder="82"></div>
-      <div><label>HRV (ms)</label><input type="number" id="whHrv" placeholder="46"></div>
-      <div><label>Resting HR (bpm)</label><input type="number" id="whRhr" placeholder="58"></div>
-    </div>
-    <div class="form-row three">
-      <div><label>Resp. Rate (rpm)</label><input type="number" step="0.1" id="whResp" placeholder="14.4"></div>
-      <div><label>SpO2 (%)</label><input type="number" id="whSpo2" placeholder="95"></div>
-      <div><label>Skin Temp (\u00b0F from baseline)</label><input type="number" step="0.1" id="whSkinTemp" placeholder="1.0"></div>
-    </div>
-    <button class="primary alt" id="addWhoopBtn">Log WHOOP Data</button>
-
     <div class="table-wrap" style="margin-top:16px;">
       <table id="whoopTable">
         <thead><tr><th>Date</th><th>Recovery</th><th>Strain</th><th>Sleep</th><th>HRV</th><th>RHR</th><th>Resp</th><th>SpO2</th><th>Skin \u0394</th><th></th></tr></thead>
@@ -352,25 +332,6 @@
       </table>
     </div>
 
-    <span class="mphase" style="margin-top:18px;">Log a Lift</span>
-    <div class="form-row three">
-      <div><label>Date</label><input type="date" id="lDate"></div>
-      <div><label>Exercise</label>
-        <select id="lExercise" onchange="document.getElementById('lCustom').style.display = this.value==='Other' ? 'block':'none';">
-          <option value="Squat">Squat</option>
-          <option value="Bench Press">Bench Press</option>
-          <option value="Deadlift">Deadlift</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div id="lCustom" style="display:none;"><label>Exercise Name</label><input type="text" id="lCustomName" placeholder="Overhead Press"></div>
-    </div>
-    <div class="form-row three">
-      <div><label>Weight (kg)</label><input type="number" step="0.5" id="lWeight" placeholder="100"></div>
-      <div><label>Sets</label><input type="number" id="lSets" placeholder="5"></div>
-      <div><label>Reps (per set)</label><input type="number" id="lReps" placeholder="5"></div>
-    </div>
-    <button class="primary" id="addLiftBtn">Log Lift</button>
   </div>
 
   <div class="grid-2">
@@ -390,47 +351,6 @@
         <button class="ghost" id="resetBtn">Clear Manual Entries</button>
       </div>
 
-      <span class="mphase" style="margin-top:18px;">Add Workout</span>
-      <div class="form-row">
-        <div><label>Date</label><input type="date" id="wDate"></div>
-        <div><label>Sport</label>
-          <select id="wSport" onchange="updateSportFields()">
-            <option value="Run">Run</option>
-            <option value="Bike">Bike</option>
-            <option value="Swim">Swim</option>
-            <option value="Strength">Strength</option>
-            <option value="Cross">Cross-training (soccer, etc.)</option>
-            <option value="Recovery">Recovery / Walk</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div><label>Duration (min)</label><input type="number" id="wDuration" min="0" placeholder="45"></div>
-        <div><label>Distance (mi, optional)</label><input type="number" step="0.01" id="wDistance" placeholder="3.1"></div>
-      </div>
-      <div class="form-row">
-        <div><label>RPE (1-10)</label><input type="number" id="wRpe" min="1" max="10" placeholder="6"></div>
-        <div><label>Avg HR (bpm)</label><input type="number" id="wAvgHr" placeholder="148"></div>
-      </div>
-      <div class="form-row three sport-fields" id="fieldsBike">
-        <div><label>Avg Power (W)</label><input type="number" id="wPower" placeholder="210"></div>
-        <div><label>Cadence (rpm)</label><input type="number" id="wCadence" placeholder="88"></div>
-        <div><label>Elevation (ft)</label><input type="number" id="wElev" placeholder="450"></div>
-      </div>
-      <div class="form-row sport-fields active" id="fieldsRun">
-        <div><label>Cadence (spm)</label><input type="number" id="wRunCadence" placeholder="172"></div>
-        <div><label>Off-bike brick?</label>
-          <select id="wBrick"><option value="">No</option><option value="yes">Yes \u2014 ran off the bike</option></select>
-        </div>
-      </div>
-      <div class="form-row sport-fields" id="fieldsSwim">
-        <div><label>Pace /100m (mm:ss)</label><input type="text" id="wPace100" placeholder="1:52"></div>
-        <div><label>Stroke Rate (spm)</label><input type="number" id="wStrokeRate" placeholder="32"></div>
-      </div>
-      <div class="form-row full">
-        <div><label>Notes / Technique</label><input type="text" id="wNotes" placeholder="Easy aerobic, felt good"></div>
-      </div>
-      <button class="primary" id="addWorkoutBtn">Log Workout</button>
     </div>
 
     <div class="panel">
@@ -923,13 +843,6 @@ function deleteWorkout(idx){
 }
 
 /* ---------------- SPORT-SPECIFIC FORM FIELDS ---------------- */
-function updateSportFields(){
-  const sport = document.getElementById('wSport').value;
-  document.getElementById('fieldsBike').classList.toggle('active', sport==='Bike');
-  document.getElementById('fieldsRun').classList.toggle('active', sport==='Run');
-  document.getElementById('fieldsSwim').classList.toggle('active', sport==='Swim');
-}
-
 /* ---------------- PROFILE, CALORIES & NUTRITION ---------------- */
 function calcBMR(p){
   // Mifflin-St Jeor
@@ -1158,22 +1071,6 @@ function deleteLift(idx){
   saveLifts(lifts);
   renderStrength();
 }
-document.getElementById('addLiftBtn').addEventListener('click', ()=>{
-  const date = document.getElementById('lDate').value;
-  const exSelect = document.getElementById('lExercise').value;
-  const exercise = exSelect==='Other' ? (document.getElementById('lCustomName').value || 'Other') : exSelect;
-  const weight = parseFloat(document.getElementById('lWeight').value) || 0;
-  const sets = parseFloat(document.getElementById('lSets').value) || 0;
-  const reps = parseFloat(document.getElementById('lReps').value) || 0;
-  if(!date || !weight){ alert('Pick a date and enter a weight.'); return; }
-  lifts.push({date, exercise, weight, sets, reps});
-  saveLifts(lifts);
-  document.getElementById('lWeight').value='';
-  document.getElementById('lSets').value='';
-  document.getElementById('lReps').value='';
-  renderStrength();
-});
-
 function initProfileForm(){
   document.getElementById('pHeight').value = profile.height ?? '';
   document.getElementById('pWeight').value = profile.weight ?? '';
@@ -1196,36 +1093,7 @@ document.getElementById('saveProfileBtn').addEventListener('click', ()=>{
   renderZones();
 });
 
-/* ---------------- ADD WORKOUT / EXPORT / IMPORT ---------------- */
-document.getElementById('addWorkoutBtn').addEventListener('click', ()=>{
-  const date = document.getElementById('wDate').value;
-  const sport = document.getElementById('wSport').value;
-  const duration = parseFloat(document.getElementById('wDuration').value) || null;
-  const distance = parseFloat(document.getElementById('wDistance').value) || null;
-  const notes = document.getElementById('wNotes').value;
-  const rpe = parseFloat(document.getElementById('wRpe').value) || null;
-  const avgHr = parseFloat(document.getElementById('wAvgHr').value) || null;
-  const entry = {date, sport, duration, distance, notes, rpe, avgHr};
-  if(sport==='Bike'){
-    entry.power = parseFloat(document.getElementById('wPower').value) || null;
-    entry.cadence = parseFloat(document.getElementById('wCadence').value) || null;
-    entry.elevation = parseFloat(document.getElementById('wElev').value) || null;
-  } else if(sport==='Run'){
-    entry.runCadence = parseFloat(document.getElementById('wRunCadence').value) || null;
-    entry.brick = document.getElementById('wBrick').value === 'yes';
-  } else if(sport==='Swim'){
-    entry.pace100 = document.getElementById('wPace100').value || null;
-    entry.strokeRate = parseFloat(document.getElementById('wStrokeRate').value) || null;
-  }
-  if(!date){ alert('Pick a date first.'); return; }
-  manualWorkouts.push(entry);
-  saveManual(manualWorkouts);
-  rebuildWorkouts();
-  ['wDuration','wDistance','wNotes','wRpe','wAvgHr','wPower','wCadence','wElev','wRunCadence','wPace100','wStrokeRate'].forEach(id=>{
-    const el = document.getElementById(id); if(el) el.value='';
-  });
-  renderAll();
-});
+/* ---------------- EXPORT / IMPORT ---------------- */
 
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   const payload = {manualWorkouts, raceDate, milestones: milestoneState, exportedAt: new Date().toISOString()};
@@ -1431,30 +1299,6 @@ function deleteWhoop(date){
   if(idx>-1){ manualWhoop.splice(idx,1); saveWhoopManual(manualWhoop); rebuildWhoop(); renderAll(); }
 }
 
-document.getElementById('addWhoopBtn').addEventListener('click', ()=>{
-  const date = document.getElementById('whDate').value;
-  if(!date){ alert('Pick a date first.'); return; }
-  const num = id => { const v = document.getElementById(id).value; return v===''?null:parseFloat(v); };
-  const skinF = num('whSkinTemp');
-  const entry = {
-    date,
-    recovery: num('whRecovery'),
-    strain: num('whStrain'),
-    sleepPerf: num('whSleep'),
-    hrv: num('whHrv'),
-    rhr: num('whRhr'),
-    resp: num('whResp'),
-    spo2: num('whSpo2'),
-    skinTempF: skinF
-  };
-  const existing = manualWhoop.findIndex(w=>w.date===date);
-  if(existing>-1) manualWhoop[existing] = entry; else manualWhoop.push(entry);
-  saveWhoopManual(manualWhoop);
-  rebuildWhoop();
-  ['whRecovery','whStrain','whSleep','whHrv','whRhr','whResp','whSpo2','whSkinTemp'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
-});
-
 /* ---------------- INIT ---------------- */
 function renderSyncStatus(){
   const el = document.getElementById('syncStatus');
@@ -1485,12 +1329,7 @@ function renderAll(){
 }
 async function init(){
   document.getElementById('raceDateInput').value = raceDate;
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('wDate').value = today;
-  document.getElementById('whDate').value = today;
-  document.getElementById('lDate').value = today;
   initProfileForm();
-  updateSportFields();
   await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop()]);
   renderAll();
 }
