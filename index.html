@@ -282,23 +282,6 @@
         <canvas id="garminHrvChart" height="180"></canvas>
       </div>
     </div>
-    <span class="mphase" style="color:#4ade80;">Log Today's Garmin Data</span>
-    <div class="form-row three">
-      <div><label>Date</label><input type="date" id="gaDate"></div>
-      <div><label>Training Readiness</label><input type="number" id="gaReadiness" min="0" max="100" placeholder="81"></div>
-      <div><label>Body Battery Low \u2192 High</label><input type="text" id="gaBattery" placeholder="38 89"></div>
-    </div>
-    <div class="form-row three">
-      <div><label>Resting HR (bpm)</label><input type="number" id="gaRhr" placeholder="48"></div>
-      <div><label>HRV (ms)</label><input type="number" id="gaHrv" placeholder="72"></div>
-      <div><label>Sleep (hrs / score)</label><input type="text" id="gaSleep" placeholder="7.7 84"></div>
-    </div>
-    <div class="form-row three">
-      <div><label>Stress (avg)</label><input type="number" id="gaStress" placeholder="31"></div>
-      <div><label>Steps</label><input type="number" id="gaSteps" placeholder="11248"></div>
-      <div></div>
-    </div>
-    <button class="primary" id="addGarminBtn" style="background:linear-gradient(135deg,#4ade80,var(--blue));color:#052e16;">Log Garmin Data</button>
     <div class="table-wrap" style="margin-top:16px;">
       <table id="garminTable">
         <thead><tr><th>Date</th><th>Readiness</th><th>RHR</th><th>HRV</th><th>Sleep</th><th>Battery</th><th>Stress</th><th>Steps</th><th></th></tr></thead>
@@ -1513,32 +1496,6 @@ function deleteGarminEntry(date){
   renderAll();
 }
 
-document.getElementById('addGarminBtn').addEventListener('click', ()=>{
-  const date = document.getElementById('gaDate').value;
-  if(!date){ alert('Pick a date first.'); return; }
-  const num = id => { const v = document.getElementById(id).value; return v===''?null:parseFloat(v); };
-  const [battLow, battHigh] = (document.getElementById('gaBattery').value || '').split(/\s+/).map(Number);
-  const [sleepHrs, sleepScore] = (document.getElementById('gaSleep').value || '').split(/\s+/).map(Number);
-  const entry = {
-    date,
-    trainingReadiness: num('gaReadiness'),
-    restingHr: num('gaRhr'),
-    hrv: num('gaHrv'),
-    sleepHours: isNaN(sleepHrs) ? null : sleepHrs,
-    sleepScore: isNaN(sleepScore) ? null : sleepScore,
-    bodyBatteryLow: isNaN(battLow) ? null : battLow,
-    bodyBatteryHigh: isNaN(battHigh) ? null : battHigh,
-    stressAvg: num('gaStress'),
-    steps: num('gaSteps'),
-  };
-  const existing = manualGarmin.findIndex(g=>g.date===date);
-  if(existing>-1) manualGarmin[existing] = entry; else manualGarmin.push(entry);
-  saveGarminManual(manualGarmin);
-  rebuildGarmin();
-  ['gaReadiness','gaBattery','gaRhr','gaHrv','gaSleep','gaStress','gaSteps'].forEach(id=>document.getElementById(id).value='');
-  renderAll();
-});
-
 /* ---------------- INIT ---------------- */
 function renderSyncStatus(){
   const el = document.getElementById('syncStatus');
@@ -1570,8 +1527,6 @@ function renderAll(){
 }
 async function init(){
   document.getElementById('raceDateInput').value = raceDate;
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('gaDate').value = today;
   initProfileForm();
   await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop(), loadSyncedGarmin()]);
   renderAll();
