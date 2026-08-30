@@ -1,0 +1,22 @@
+{
+  "syncedAt": "2026-08-29T20:41:18.444506Z",
+  "source": "Garmin Connect (sync_garmin.py)",
+  "workouts": [
+    {
+      "activityId": 24128066954,
+      "date": "2026-08-26",
+      "sport": "Swim",
+      "duration": 22.9,
+      "distance": 0.67,
+      "notes": "Pool Swim"
+    },
+    {
+      "activityId": 24165880900,
+      "date": "2026-08-29",
+      "sport": "Run",
+      "duration": 32.8,
+      "distance": 4.01,
+      "notes": "Concord Running"
+    }
+  ]
+}
