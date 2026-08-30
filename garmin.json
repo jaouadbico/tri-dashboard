@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-28T22:06:48.368447Z",
+  "syncedAt": "2026-08-29T20:41:18.242953Z",
   "source": "Garmin Connect (sync_garmin.py)",
   "entries": [
     {
@@ -44,10 +44,22 @@
       "hrv": null,
       "sleepHours": null,
       "sleepScore": null,
-      "bodyBatteryLow": 12,
+      "bodyBatteryLow": 10,
       "bodyBatteryHigh": 28,
-      "stressAvg": 27,
-      "steps": 3445,
+      "stressAvg": 26,
+      "steps": 3686,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-08-29",
+      "restingHr": 54,
+      "hrv": 49,
+      "sleepHours": 8.4,
+      "sleepScore": 77,
+      "bodyBatteryLow": 20,
+      "bodyBatteryHigh": 95,
+      "stressAvg": 23,
+      "steps": 10913,
       "trainingReadiness": null
     }
   ]
