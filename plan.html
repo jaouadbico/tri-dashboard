@@ -114,6 +114,14 @@
   .day-row-head.is-today{color:#4d94ff;}
   .wo-card{background:var(--panel-alt);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;}
   .wo-card.completed{opacity:0.7;}
+  .wo-card.missed{border-color:var(--amber);}
+  .missed-box{margin-top:12px;background:rgba(255,106,61,0.08);border:1px solid rgba(255,106,61,0.3);border-radius:12px;padding:10px 12px;}
+  .missed-head{font-size:12px;font-weight:700;color:var(--amber);}
+  .missed-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+  .missed-row input[type="date"]{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12px;}
+  .missed-warning{font-size:11px;color:var(--amber);margin-top:6px;line-height:1.4;}
+  .moved-note{margin-top:10px;font-size:11.5px;color:var(--muted);}
+  .moved-note a{color:var(--cyan);margin-left:4px;}
   .wo-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
   .wo-card-title{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;}
   .wo-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
@@ -547,7 +555,7 @@ function buildProgram(){
         if(s.brickAlways){ isBrick = true; brickDur = lerp(s.brickDur[0], s.brickDur[1], t); }
         else if(s.brickEvery && (globalWeekNum % s.brickEvery === 0)){ isBrick = true; brickDur = 15; }
         sessions.push({
-          date: isoDate(date), sport: useTpl.sport, title: useTpl.title, type: useTpl.type,
+          date: isoDate(date), origDate: isoDate(date), sport: useTpl.sport, title: useTpl.title, type: useTpl.type,
           duration: dur, detail: useTpl.detail, isBrick, brickDur,
           structure: buildStructure(useTpl.sport, useTpl.type, dur, brickDur),
           swap: swapSuggestion(useTpl.sport, useTpl.type),
@@ -565,24 +573,125 @@ function buildProgram(){
 
 const PROGRAM = buildProgram();
 
-/* ---------------- SYNCED ACTUAL WORKOUTS (from workouts.json, same source as the Stats Dashboard) ---------------- */
+/* ---------------- RESCHEDULE OVERLAY (missed sessions moved to a new date) ---------------- */
+const RESCHEDULE_KEY = 'atlas703_plan_reschedule_v1';
+function loadReschedules(){ try { return JSON.parse(localStorage.getItem(RESCHEDULE_KEY)) || {}; } catch(e){ return {}; } }
+function saveReschedules(r){ localStorage.setItem(RESCHEDULE_KEY, JSON.stringify(r)); }
+let reschedules = loadReschedules();
+
+function allSessions(){ return PROGRAM.flatMap(w=>w.sessions); }
+function sessionsOnDate(dateStr){ return allSessions().filter(s=>s.date===dateStr); }
+
+// Re-derives each session's effective (possibly moved) date from the reschedule
+// map and rebuilds each week's session list from scratch, so a session moved
+// across a week boundary shows up (rings, totals, day list) under its new week.
+function applyReschedulesAndRegroup(){
+  const all = allSessions();
+  all.forEach(s=>{
+    s.date = s.origDate;
+    delete s.movedFrom;
+    const newDate = reschedules[sessionKey(s)];
+    if(newDate && newDate !== s.origDate){
+      s.movedFrom = s.origDate;
+      s.date = newDate;
+    }
+  });
+  PROGRAM.forEach(week=>{
+    const weekEnd = isoDate(addDays(new Date(week.start+'T00:00:00'),6));
+    week.sessions = all.filter(s=> s.date>=week.start && s.date<=weekEnd);
+  });
+}
+applyReschedulesAndRegroup();
+
+function setReschedule(key, newDate){
+  reschedules[key] = newDate;
+  saveReschedules(reschedules);
+  applyReschedulesAndRegroup();
+  renderAll();
+}
+function clearReschedule(key){
+  delete reschedules[key];
+  saveReschedules(reschedules);
+  applyReschedulesAndRegroup();
+  renderAll();
+}
+
+/* ---------------- SYNCED ACTUAL WORKOUTS (Strava workouts.json + Garmin garmin_activities.json) ---------------- */
+// Sport-name normalization so the two sources compare cleanly even if one
+// uses different casing/wording (e.g. "running" vs "Run").
+function normalizeSport(sport){
+  const s = (sport||'').trim().toLowerCase();
+  const map = {
+    run:'Run', running:'Run', jog:'Run', jogging:'Run',
+    bike:'Bike', biking:'Bike', cycling:'Bike', ride:'Bike', cycle:'Bike',
+    swim:'Swim', swimming:'Swim',
+    strength:'Strength', 'strength training':'Strength', weights:'Strength', lifting:'Strength',
+    recovery:'Recovery', walk:'Recovery', walking:'Recovery', hike:'Recovery', hiking:'Recovery',
+    cross:'Cross', 'cross-training':'Cross', crosstraining:'Cross', soccer:'Cross',
+    rest:'Rest',
+  };
+  return map[s] || (sport ? sport.trim() : sport);
+}
+
+// Two entries (one Strava, one Garmin) on the same date/sport are treated as
+// the same physical workout if their durations are close — Strava often
+// mirrors the exact same Garmin-device activity, so without this, summing
+// both would double-count minutes toward weekly volume.
+function isDurationMatch(a, b){
+  const diff = Math.abs(a - b);
+  const tol = Math.max(5, 0.08 * Math.max(a, b));
+  return diff <= tol;
+}
+
+// syncedWorkouts: raw combined list (both sources) — used for existence
+// checks (hasActualOnDate/findActual), where a duplicate doesn't matter.
+// volumeWorkouts: deduped list — used only for actualMinutes (weekly totals),
+// where a duplicate would double-count minutes.
 let syncedWorkouts = [];
+let volumeWorkouts = [];
 let syncOk = false;
+
+function dedupeForVolume(stravaList, garminList){
+  const groups = {};
+  stravaList.forEach(w=>{
+    const key = w.date+'|'+w.sport;
+    (groups[key] = groups[key] || {strava:[], garmin:[]}).strava.push(w);
+  });
+  garminList.forEach(w=>{
+    const key = w.date+'|'+w.sport;
+    (groups[key] = groups[key] || {strava:[], garmin:[]}).garmin.push(w);
+  });
+  const result = [];
+  Object.values(groups).forEach(group=>{
+    group.strava.forEach(w=>result.push(w));
+    const usedStrava = new Set();
+    group.garmin.forEach(gw=>{
+      const matchIdx = group.strava.findIndex((sw,idx)=> !usedStrava.has(idx) && isDurationMatch(sw.duration, gw.duration));
+      if(matchIdx>-1){
+        usedStrava.add(matchIdx);
+        console.log(`[volume-dedupe] Skipped Garmin "${gw.sport}" on ${gw.date} (${gw.duration}min) — already counted via Strava (${group.strava[matchIdx].duration}min).`);
+      } else {
+        result.push(gw);
+      }
+    });
+  });
+  return result;
+}
+
 async function loadSyncedActuals(){
-  try{
-    const res = await fetch('workouts.json', {cache:'no-store'});
-    if(!res.ok) throw new Error('no workouts.json');
-    const data = await res.json();
-    syncedWorkouts = data.workouts || [];
-    syncOk = true;
-  }catch(e){
-    syncedWorkouts = [];
-    syncOk = false;
-  }
+  const [stravaData, garminData] = await Promise.all([
+    fetch('workouts.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch('garmin_activities.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null),
+  ]);
+  const stravaWorkouts = (stravaData?.workouts || []).map(w=>({...w, sport:normalizeSport(w.sport), source:'strava'}));
+  const garminWorkouts = (garminData?.workouts || []).map(w=>({...w, sport:normalizeSport(w.sport), source:'garmin'}));
+  syncedWorkouts = stravaWorkouts.concat(garminWorkouts);
+  volumeWorkouts = dedupeForVolume(stravaWorkouts, garminWorkouts);
+  syncOk = !!stravaData || !!garminData;
 }
 // Real logged minutes for a given sport within [startDate, endDate] inclusive (both ISO strings)
 function actualMinutes(sport, startDate, endDate){
-  return syncedWorkouts
+  return volumeWorkouts
     .filter(w => w.sport===sport && w.date>=startDate && w.date<=endDate)
     .reduce((sum,w)=> sum + (w.duration||0), 0);
 }
@@ -615,7 +724,7 @@ const DONE_KEY = 'atlas703_plan_done_v1';
 function loadDone(){ try { return JSON.parse(localStorage.getItem(DONE_KEY)) || {}; } catch(e){ return {}; } }
 function saveDone(d){ localStorage.setItem(DONE_KEY, JSON.stringify(d)); }
 let doneMap = loadDone();
-function sessionKey(s){ return `${s.date}_${s.sport}_${s.title}`; }
+function sessionKey(s){ return `${s.origDate}_${s.sport}_${s.title}`; }
 function toggleDone(key){
   doneMap[key] = !doneMap[key];
   saveDone(doneMap);
@@ -633,6 +742,52 @@ function findWeekForDate(dateStr){
     const we = addDays(ws,6);
     return d>=ws && d<=we;
   });
+}
+
+/* ---------------- MISSED SESSION HANDLING ---------------- */
+// A session is missed once its day has passed with no manual check and no
+// matching actual (from either Strava or Garmin). Rest days can't be missed.
+function isMissed(s, todayStr){
+  if(s.sport==='Rest') return false;
+  if(s.date>=todayStr) return false;
+  if(doneMap[sessionKey(s)]) return false;
+  if(hasActualOnDate(s.sport, s.date)) return false;
+  return true;
+}
+function isHardType(type){ return (LOAD_FACTOR[type]||0) >= 1.5; }
+
+// Finds the best make-up day for a missed session: remaining rest days in its
+// original week first, then up to 7 more days forward. Prefers a day that
+// isn't adjacent to another key/hard session; if none exists, still returns
+// the nearest open day but flags the adjacency so it isn't silently hidden.
+function suggestRescheduleDate(session, todayStr){
+  const week = findWeekForDate(session.origDate);
+  if(!week) return {date:null, warning:'Could not locate the session\'s week.'};
+  const weekEnd = isoDate(addDays(new Date(week.start+'T00:00:00'),6));
+  const programEnd = isoDate(addDays(new Date(PROGRAM[PROGRAM.length-1].start+'T00:00:00'),6));
+
+  const candidates = [];
+  const searchStart = todayStr > week.start ? todayStr : week.start;
+  for(let d=new Date(searchStart+'T00:00:00'); isoDate(d)<=weekEnd; d=addDays(d,1)){
+    candidates.push(isoDate(d));
+  }
+  for(let i=1;i<=7;i++){
+    const d = isoDate(addDays(new Date(weekEnd+'T00:00:00'), i));
+    if(d<=programEnd) candidates.push(d);
+  }
+
+  const isOpen = d => sessionsOnDate(d).length===0;
+  const isAdjacentToHard = d => {
+    const prev = isoDate(addDays(new Date(d+'T00:00:00'),-1));
+    const next = isoDate(addDays(new Date(d+'T00:00:00'),1));
+    return sessionsOnDate(prev).some(s=>isHardType(s.type)) || sessionsOnDate(next).some(s=>isHardType(s.type));
+  };
+
+  const openCandidates = candidates.filter(isOpen);
+  const safeCandidates = openCandidates.filter(d=>!isAdjacentToHard(d));
+  if(safeCandidates.length) return {date: safeCandidates[0], warning:null};
+  if(openCandidates.length) return {date: openCandidates[0], warning:'Only open day found is right next to a key/hard session — consider extra recovery around it.'};
+  return {date:null, warning:'No open day found within a week of the original session — you\'ll need to swap with an existing session manually.'};
 }
 
 /* ---------------- SPORT COLORS (Stamina-style: swim=blue, bike=pink, run=orange) ---------------- */
@@ -759,9 +914,13 @@ function renderDayList(week, todayStr){
     const isToday = day.date===todayStr;
     const dayLabel = day.d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
     if(!day.session){
+      const movedAway = allSessions().find(s=>s.movedFrom===day.date);
+      const restText = movedAway
+        ? `\u21aa ${movedAway.title} was moved to ${fmtDate(new Date(movedAway.date+'T00:00:00'))}.`
+        : `\u{1F6CC} Rest day \u2014 no prescribed session.`;
       return `<div class="day-row">
         <div class="day-row-head ${isToday?'is-today':''}">${isToday?'TODAY \u00b7 ':''}${dayLabel}</div>
-        <div class="rest-mini">\u{1F6CC} Rest day \u2014 no prescribed session.</div>
+        <div class="rest-mini">${restText}</div>
       </div>`;
     }
     const s = day.session;
@@ -769,6 +928,7 @@ function renderDayList(week, todayStr){
     const autoDone = hasActualOnDate(s.sport, s.date);
     const isDone = !!doneMap[key] || autoDone;
     const actual = autoDone ? findActual(s.sport, s.date) : null;
+    const missed = isMissed(s, todayStr);
     const m = sessionMetrics(s, week.phase);
     const structId = `dstruct-${idx}`;
     const structHtml = (s.structure||[]).map(seg=>`
@@ -788,9 +948,26 @@ function renderDayList(week, todayStr){
           ${actualPace(actual) ? `<div class="actual-stat"><span class="alabel">Pace</span><span class="aval">${actualPace(actual)}</span></div>` : ''}
         </div>
       </div>` : '';
+    const movedHtml = s.movedFrom ? `
+      <div class="moved-note">\u21AA Moved from ${fmtDate(new Date(s.movedFrom+'T00:00:00'))} <a href="#" onclick="event.stopPropagation();clearReschedule('${key}');return false;">undo</a></div>` : '';
+    const missedHtml = missed ? (()=>{
+      const suggestion = suggestRescheduleDate(s, todayStr);
+      const inputId = `resched-${idx}`;
+      return `
+      <div class="missed-box">
+        <div class="missed-head">\u26A0\uFE0F Missed \u2014 not logged on ${fmtDate(new Date(s.date+'T00:00:00'))}</div>
+        ${suggestion.date ? `
+          <div class="missed-row" onclick="event.stopPropagation();">
+            <input type="date" id="${inputId}" value="${suggestion.date}">
+            <button class="ghost" onclick="event.stopPropagation();setReschedule('${key}', document.getElementById('${inputId}').value);">Move session</button>
+          </div>
+          ${suggestion.warning ? `<div class="missed-warning">${suggestion.warning}</div>` : ''}
+        ` : `<div class="missed-warning">${suggestion.warning}</div>`}
+      </div>`;
+    })() : '';
     return `<div class="day-row">
       <div class="day-row-head ${isToday?'is-today':''}">${isToday?'TODAY \u00b7 ':''}${dayLabel}</div>
-      <div class="wo-card ${isDone?'completed':''}" onclick="document.getElementById('${structId}').classList.toggle('open')">
+      <div class="wo-card ${isDone?'completed':''} ${missed?'missed':''}" onclick="document.getElementById('${structId}').classList.toggle('open')">
         <div class="wo-card-top">
           <div class="wo-card-title">
             <div class="wo-icon" style="background:${SPORT_HEX[s.sport]}33;">${SPORT_ICON[s.sport]}</div>
@@ -808,6 +985,8 @@ function renderDayList(week, todayStr){
           <div class="wo-stat"><div class="wo-stat-label">\u{1F3AF} Est. Pace</div><div class="wo-stat-val" style="font-size:11px;">${m.estPace||'\u2014'}</div></div>
           <div class="wo-stat"><div class="wo-stat-label">\u26F0\uFE0F Load</div><div class="wo-stat-val">${m.load}<span class="unit">/10</span></div></div>
         </div>
+        ${movedHtml}
+        ${missedHtml}
         ${actualHtml}
         <div class="wo-structure sess-struct" id="${structId}">
           ${structHtml}

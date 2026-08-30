@@ -146,6 +146,61 @@ def pull_activities(client: Garmin, start: date, end: date) -> list:
 # Writers
 # ---------------------------------------------------------------------------
 
+# Garmin Connect activityType.typeKey -> this dashboard's sport vocabulary
+# (Run/Bike/Swim/Strength/Recovery, matching workouts.json). Unmapped types
+# (e.g. multi_sport) are skipped rather than guessed.
+GARMIN_TYPE_TO_SPORT = {
+    "running": "Run", "treadmill_running": "Run", "trail_running": "Run",
+    "track_running": "Run", "indoor_running": "Run", "street_running": "Run",
+    "cycling": "Bike", "road_biking": "Bike", "indoor_cycling": "Bike",
+    "virtual_ride": "Bike", "mountain_biking": "Bike", "gravel_cycling": "Bike",
+    "cyclocross": "Bike", "track_cycling": "Bike",
+    "lap_swimming": "Swim", "open_water_swimming": "Swim", "pool_swim": "Swim",
+    "strength_training": "Strength",
+    "walking": "Recovery", "hiking": "Recovery",
+}
+
+
+def write_dashboard_garmin_activities_json(repo_root: Path, activities: list):
+    """
+    Writes garmin_activities.json at the repo root in the same shape as
+    workouts.json ({syncedAt, source, workouts: [{date, sport, duration,
+    distance, notes}]}) so plan.html can merge it straight into its existing
+    Strava-sourced workout list. Keyed internally by activityId so re-running
+    with an overlapping --days window doesn't create duplicate entries.
+    """
+    path = repo_root / "garmin_activities.json"
+    by_id = {}
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text())
+            by_id = {str(w["activityId"]): w for w in existing.get("workouts", []) if w.get("activityId") is not None}
+        except Exception:
+            by_id = {}
+
+    for a in activities:
+        sport = GARMIN_TYPE_TO_SPORT.get((a.get("activityType") or {}).get("typeKey"))
+        if not sport:
+            continue
+        distance_m = a.get("distance") or 0
+        by_id[str(a.get("activityId"))] = {
+            "activityId": a.get("activityId"),
+            "date": (a.get("startTimeLocal") or "")[:10],
+            "sport": sport,
+            "duration": round((a.get("duration") or 0) / 60, 1),
+            "distance": round(distance_m / 1609.34, 2) if distance_m else None,
+            "notes": a.get("activityName"),
+        }
+
+    workouts = sorted(by_id.values(), key=lambda w: w["date"])
+    out = {
+        "syncedAt": datetime.now().isoformat() + "Z",
+        "source": "Garmin Connect (sync_garmin.py)",
+        "workouts": workouts,
+    }
+    path.write_text(json.dumps(out, indent=2, default=str))
+    return path
+
 def write_daily_note(out_dir: Path, wellness: dict):
     d = wellness["date"]
     path = out_dir / "daily" / f"{d}.md"
@@ -323,6 +378,8 @@ def main():
             print(f"  wrote {path}")
         json_path = update_data_json(out_dir, wellness_records, activities)
         print(f"  updated {json_path}")
+        ga_path = write_dashboard_garmin_activities_json(Path(args.repo_root), activities)
+        print(f"  updated {ga_path} for the dashboard")
     else:
         for a in activities:
             print(f"  - {a.get('startTimeLocal', '')[:10]}  {a.get('activityName')}")
