@@ -18,10 +18,10 @@ Auth (run once, interactively, to create a reusable token):
     again until the token expires (Garmin tokens are long-lived, ~1 year).
 
 Daily pull (what cron / GitHub Actions will run):
-    python sync_garmin.py --days 3
+    python sync_garmin.py --days 7
 
 Dry run (pull data, print summary, don't write files):
-    python sync_garmin.py --days 3 --dry-run
+    python sync_garmin.py --days 7 --dry-run
 
 Output layout (default ./garmin/):
     garmin/
@@ -177,6 +177,7 @@ def write_dashboard_garmin_activities_json(repo_root: Path, activities: list):
             by_id = {str(w["activityId"]): w for w in existing.get("workouts", []) if w.get("activityId") is not None}
         except Exception:
             by_id = {}
+    by_id_before = dict(by_id)
 
     for a in activities:
         sport = GARMIN_TYPE_TO_SPORT.get((a.get("activityType") or {}).get("typeKey"))
@@ -193,6 +194,10 @@ def write_dashboard_garmin_activities_json(repo_root: Path, activities: list):
         }
 
     workouts = sorted(by_id.values(), key=lambda w: w["date"])
+
+    if path.exists() and by_id == by_id_before:
+        return path  # no real change — leave the file (and its timestamp) untouched
+
     out = {
         "syncedAt": datetime.now().isoformat() + "Z",
         "source": "Garmin Connect (sync_garmin.py)",
@@ -269,6 +274,7 @@ def update_data_json(out_dir: Path, wellness_records: list, activities: list):
 
     existing.setdefault("daily", {})
     existing.setdefault("activities", {})
+    before = json.dumps({"daily": existing["daily"], "activities": existing["activities"]}, sort_keys=True, default=str)
 
     for w in wellness_records:
         existing["daily"][w["date"]] = w
@@ -276,6 +282,10 @@ def update_data_json(out_dir: Path, wellness_records: list, activities: list):
     for a in activities:
         aid = str(a.get("activityId"))
         existing["activities"][aid] = a
+
+    after = json.dumps({"daily": existing["daily"], "activities": existing["activities"]}, sort_keys=True, default=str)
+    if before == after and path.exists():
+        return path  # no real change — leave the file (and its timestamp) untouched
 
     existing["last_updated"] = datetime.now().isoformat()
     path.write_text(json.dumps(existing, indent=2, default=str))
@@ -319,6 +329,9 @@ def write_dashboard_garmin_json(repo_root: Path, wellness_records: list):
 
     entries = sorted(by_date.values(), key=lambda e: e["date"])
 
+    if path.exists() and json.dumps(existing.get("entries", []), sort_keys=True, default=str) == json.dumps(entries, sort_keys=True, default=str):
+        return path  # no real change — leave the file (and its timestamp) untouched
+
     out = {
         "syncedAt": datetime.now().isoformat() + "Z",
         "source": "Garmin Connect (sync_garmin.py)",
@@ -335,7 +348,7 @@ def write_dashboard_garmin_json(repo_root: Path, wellness_records: list):
 def main():
     parser = argparse.ArgumentParser(description="Sync Garmin Connect data to local files.")
     parser.add_argument("--login", action="store_true", help="Force an interactive login and refresh the saved token.")
-    parser.add_argument("--days", type=int, default=3, help="How many days back to pull (default 3).")
+    parser.add_argument("--days", type=int, default=7, help="How many days back to pull (default 7).")
     parser.add_argument("--out-dir", default="garmin", help="Output directory (default ./garmin).")
     parser.add_argument("--repo-root", default=".", help="tri-dashboard repo root — where garmin.json is written (default: current directory).")
     parser.add_argument("--token-dir", default=os.path.expanduser("~/.garmin_tokens"), help="Where the login token is cached.")
