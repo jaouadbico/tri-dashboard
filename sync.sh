@@ -9,6 +9,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# launchd runs this with a minimal PATH — make sure common tool locations are covered.
+export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/anaconda3/bin:$PATH"
+
+echo "=== sync.sh run: $(date '+%Y-%m-%d %H:%M:%S') ==="
+
 DAYS=7
 PUSH=1
 for arg in "$@"; do
