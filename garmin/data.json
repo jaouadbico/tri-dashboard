@@ -568,9 +568,9 @@
       "endTimeGMT": "2026-08-30 10:32:51",
       "qualifyingDive": false,
       "activityUUID": "1954f1f9-f09f-43c4-a959-ba6899fd7f2b",
-      "purposeful": false,
       "pr": false,
       "favorite": false,
+      "purposeful": false,
       "parent": false,
       "decoDive": false,
       "manualActivity": false,
@@ -767,9 +767,9 @@
       "endTimeGMT": "2026-09-01 23:04:39",
       "qualifyingDive": false,
       "activityUUID": "1b3f7431-5676-4a50-b784-5fcc5bf539b7",
-      "purposeful": false,
       "pr": false,
       "favorite": false,
+      "purposeful": false,
       "parent": false,
       "decoDive": false,
       "manualActivity": false,
@@ -778,5 +778,5 @@
       "atpActivity": false
     }
   },
-  "last_updated": "2026-09-05T13:46:38.012382"
+  "last_updated": "2026-09-05T13:47:09.935703"
 }
