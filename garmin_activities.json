@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-09-05T13:47:09.936321Z",
+  "syncedAt": "2026-09-06T09:34:13.616869Z",
   "source": "Garmin Connect (sync_garmin.py)",
   "workouts": [
     {
@@ -33,6 +33,14 @@
       "duration": 53.0,
       "distance": 6.23,
       "notes": "Concord - Base"
+    },
+    {
+      "activityId": 24259676965,
+      "date": "2026-09-06",
+      "sport": "Bike",
+      "duration": 108.2,
+      "distance": 26.41,
+      "notes": "Concord Cycling"
     }
   ]
 }
