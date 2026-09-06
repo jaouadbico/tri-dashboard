@@ -870,7 +870,7 @@ function renderWeekView(){
   const totalDone = sports.reduce((a,sp)=>a+completed[sp],0);
 
   const ringsHtml = sports.map(sp=>{
-    const pct = targets[sp]>0 ? Math.min(100,(completed[sp]/targets[sp])*100) : 0;
+    const pct = targets[sp]>0 ? Math.min(100,(completed[sp]/targets[sp])*100) : (completed[sp]>0 ? 100 : 0);
     return `<div class="sport-ring-card">
       <div class="sport-ring-wrap">${ringSVG(pct, SPORT_HEX[sp], 76)}<div class="sport-ring-icon">${SPORT_ICON[sp]}</div></div>
       <div class="sport-ring-time">${fmtHM(completed[sp])}</div>
