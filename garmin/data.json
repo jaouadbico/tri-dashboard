@@ -135,14 +135,24 @@
     "2026-09-06": {
       "date": "2026-09-06",
       "resting_hr": 52,
-      "steps": 382,
-      "stress_avg": 15,
-      "body_battery_start": 63,
+      "steps": 2148,
+      "stress_avg": 29,
+      "body_battery_start": 35,
       "sleep_hours": 5.6,
       "sleep_score": 70,
       "hrv_overnight_ms": 50,
-      "body_battery_low": 48,
+      "body_battery_low": 35,
       "body_battery_high": 89
+    },
+    "2026-09-07": {
+      "date": "2026-09-07",
+      "resting_hr": null,
+      "steps": null,
+      "stress_avg": null,
+      "body_battery_start": null,
+      "sleep_hours": null,
+      "sleep_score": null,
+      "hrv_overnight_ms": null
     }
   },
   "activities": {
@@ -779,15 +789,15 @@
       "endTimeGMT": "2026-09-01 23:04:39",
       "qualifyingDive": false,
       "activityUUID": "1b3f7431-5676-4a50-b784-5fcc5bf539b7",
-      "favorite": false,
-      "purposeful": false,
-      "pr": false,
-      "parent": false,
-      "decoDive": false,
-      "manualActivity": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
-      "atpActivity": false
+      "atpActivity": false,
+      "pr": false,
+      "purposeful": false,
+      "manualActivity": false,
+      "parent": false,
+      "decoDive": false,
+      "favorite": false
     },
     "24259676965": {
       "activityId": 24259676965,
@@ -923,16 +933,16 @@
       "endTimeGMT": "2026-09-06 12:10:02",
       "qualifyingDive": false,
       "activityUUID": "e192a380-edd9-4bd1-a726-cb3aa81ded85",
-      "favorite": false,
-      "purposeful": false,
-      "pr": true,
-      "parent": false,
-      "decoDive": false,
-      "manualActivity": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
-      "atpActivity": false
+      "atpActivity": false,
+      "pr": true,
+      "purposeful": false,
+      "manualActivity": false,
+      "parent": false,
+      "decoDive": false,
+      "favorite": false
     }
   },
-  "last_updated": "2026-09-06T09:34:13.612985"
+  "last_updated": "2026-09-07T12:11:34.652650"
 }
