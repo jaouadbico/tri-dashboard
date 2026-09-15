@@ -231,14 +231,26 @@
     "2026-09-14": {
       "date": "2026-09-14",
       "resting_hr": 51,
-      "steps": 5516,
-      "stress_avg": 32,
-      "body_battery_start": 23,
+      "steps": 7322,
+      "stress_avg": 31,
+      "body_battery_start": 20,
       "sleep_hours": 29.1,
       "sleep_score": 80,
       "hrv_overnight_ms": 54,
-      "body_battery_low": 23,
+      "body_battery_low": 16,
       "body_battery_high": 100
+    },
+    "2026-09-15": {
+      "date": "2026-09-15",
+      "resting_hr": 55,
+      "steps": null,
+      "stress_avg": 20,
+      "body_battery_start": 50,
+      "sleep_hours": null,
+      "sleep_score": null,
+      "hrv_overnight_ms": null,
+      "body_battery_low": 21,
+      "body_battery_high": 50
     }
   },
   "activities": {
@@ -1160,12 +1172,12 @@
       "endTimeGMT": "2026-09-10 18:25:37",
       "qualifyingDive": false,
       "activityUUID": "7e52c62d-3b82-4d5e-9b80-495bf586f955",
+      "pr": false,
       "favorite": false,
       "purposeful": false,
-      "pr": false,
+      "manualActivity": false,
       "parent": false,
       "decoDive": false,
-      "manualActivity": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
       "atpActivity": false
@@ -1344,16 +1356,16 @@
       "endTimeGMT": "2026-09-12 18:04:18",
       "qualifyingDive": false,
       "activityUUID": "ff1badbc-4ba7-46ae-b68e-b96c12a28427",
+      "pr": false,
       "favorite": false,
       "purposeful": false,
-      "pr": false,
+      "manualActivity": false,
       "parent": false,
       "decoDive": false,
-      "manualActivity": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
       "atpActivity": false
     }
   },
-  "last_updated": "2026-09-14T20:10:31.562066"
+  "last_updated": "2026-09-15T06:01:18.089905"
 }
