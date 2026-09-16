@@ -242,15 +242,27 @@
     },
     "2026-09-15": {
       "date": "2026-09-15",
-      "resting_hr": 55,
-      "steps": null,
+      "resting_hr": 49,
+      "steps": 4534,
       "stress_avg": 20,
-      "body_battery_start": 50,
+      "body_battery_start": 49,
+      "sleep_hours": 8.9,
+      "sleep_score": 73,
+      "hrv_overnight_ms": 55,
+      "body_battery_low": 21,
+      "body_battery_high": 94
+    },
+    "2026-09-16": {
+      "date": "2026-09-16",
+      "resting_hr": 53,
+      "steps": 100,
+      "stress_avg": 15,
+      "body_battery_start": 86,
       "sleep_hours": null,
       "sleep_score": null,
       "hrv_overnight_ms": null,
-      "body_battery_low": 21,
-      "body_battery_high": 50
+      "body_battery_low": 49,
+      "body_battery_high": 86
     }
   },
   "activities": {
@@ -1172,12 +1184,12 @@
       "endTimeGMT": "2026-09-10 18:25:37",
       "qualifyingDive": false,
       "activityUUID": "7e52c62d-3b82-4d5e-9b80-495bf586f955",
-      "pr": false,
       "favorite": false,
       "purposeful": false,
-      "manualActivity": false,
+      "pr": false,
       "parent": false,
       "decoDive": false,
+      "manualActivity": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
       "atpActivity": false
@@ -1356,16 +1368,16 @@
       "endTimeGMT": "2026-09-12 18:04:18",
       "qualifyingDive": false,
       "activityUUID": "ff1badbc-4ba7-46ae-b68e-b96c12a28427",
-      "pr": false,
       "favorite": false,
       "purposeful": false,
-      "manualActivity": false,
+      "pr": false,
       "parent": false,
       "decoDive": false,
+      "manualActivity": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
       "atpActivity": false
     }
   },
-  "last_updated": "2026-09-15T06:01:18.089905"
+  "last_updated": "2026-09-16T06:00:17.007226"
 }
