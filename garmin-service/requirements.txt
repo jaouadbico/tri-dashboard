@@ -1,0 +1,7 @@
+# Pinned to the version this scaffold was verified against (see README's
+# "Verified against" section). Bump deliberately, not automatically —
+# garminconnect's login internals are exactly what's at risk upstream.
+garminconnect==0.3.11
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.0,<3.0
