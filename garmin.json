@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-09-17T06:01:18.198400Z",
+  "syncedAt": "2026-09-24T08:19:32.086078Z",
   "source": "Garmin Connect (sync_garmin.py)",
   "entries": [
     {
@@ -288,6 +288,90 @@
       "bodyBatteryHigh": 51,
       "stressAvg": 19,
       "steps": 13,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-18",
+      "restingHr": 50,
+      "hrv": 46,
+      "sleepHours": 45.0,
+      "sleepScore": 52,
+      "bodyBatteryLow": 39,
+      "bodyBatteryHigh": 90,
+      "stressAvg": 21,
+      "steps": 2216,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-19",
+      "restingHr": 52,
+      "hrv": null,
+      "sleepHours": 4.3,
+      "sleepScore": 54,
+      "bodyBatteryLow": 22,
+      "bodyBatteryHigh": 85,
+      "stressAvg": 23,
+      "steps": 4967,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-20",
+      "restingHr": 52,
+      "hrv": null,
+      "sleepHours": null,
+      "sleepScore": null,
+      "bodyBatteryLow": 38,
+      "bodyBatteryHigh": 65,
+      "stressAvg": 19,
+      "steps": 3338,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-21",
+      "restingHr": 54,
+      "hrv": null,
+      "sleepHours": null,
+      "sleepScore": null,
+      "bodyBatteryLow": 47,
+      "bodyBatteryHigh": 56,
+      "stressAvg": 25,
+      "steps": 654,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-22",
+      "restingHr": null,
+      "hrv": null,
+      "sleepHours": null,
+      "sleepScore": null,
+      "bodyBatteryLow": null,
+      "bodyBatteryHigh": null,
+      "stressAvg": null,
+      "steps": null,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-23",
+      "restingHr": null,
+      "hrv": null,
+      "sleepHours": null,
+      "sleepScore": null,
+      "bodyBatteryLow": null,
+      "bodyBatteryHigh": null,
+      "stressAvg": null,
+      "steps": null,
+      "trainingReadiness": null
+    },
+    {
+      "date": "2026-09-24",
+      "restingHr": null,
+      "hrv": null,
+      "sleepHours": null,
+      "sleepScore": null,
+      "bodyBatteryLow": null,
+      "bodyBatteryHigh": null,
+      "stressAvg": null,
+      "steps": null,
       "trainingReadiness": null
     }
   ]
