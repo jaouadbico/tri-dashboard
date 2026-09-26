@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Connect Your Accounts</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
+    --text:#f5f5f6; --muted:#9a9aa2;
+    --cyan:#e8112d; --amber:#ff6a3d; --green:#2fd88a; --red:#c81e3a;
+    --radius:18px; --radius-lg:22px;
+    --shadow: 0 8px 28px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+  main{max-width:640px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:22px;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+  .banner{border-radius:14px;padding:12px 16px;font-size:13px;margin-bottom:20px;display:none;}
+  .banner.show{display:block;}
+  .banner.ok{background:rgba(47,216,138,0.12);border:1px solid rgba(47,216,138,0.4);color:var(--green);}
+  .banner.err{background:rgba(200,30,58,0.12);border:1px solid rgba(200,30,58,0.4);color:#ff8a97;}
+  .auth-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;margin-bottom:20px;}
+  .auth-box input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-alt);color:var(--text);font-size:14px;margin:8px 0;}
+  .auth-box button, .card button{background:var(--cyan);color:#fff;border:none;padding:10px 18px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px;}
+  .auth-box button:hover, .card button:hover{filter:brightness(1.1);}
+  .signed-in-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .signed-in-row a{color:var(--muted);cursor:pointer;text-decoration:underline;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:16px;}
+  .card-title{font-weight:700;font-size:15px;}
+  .card-sub{color:var(--muted);font-size:12px;margin-top:4px;}
+  .card button.ghost{background:none;border:1px solid var(--line);color:var(--muted);}
+  .card.disabled{opacity:0.5;}
+  .connected-badge{color:var(--green);font-size:12px;font-weight:700;}
+  [hidden]{display:none!important;}
+</style>
+</head>
+<body>
+<main>
+  <h1>Connect Your Accounts</h1>
+  <div class="sub">Link Strava, WHOOP, or Garmin so your training data syncs automatically.</div>
+
+  <div id="banner" class="banner"></div>
+
+  <div id="authBox" class="auth-box">
+    <div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Sign in to manage your connections</div>
+    <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email">
+    <button id="sendLinkBtn">Send magic link</button>
+    <div id="authStatus" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
+  </div>
+
+  <div id="signedInRow" class="signed-in-row" hidden>
+    <span id="signedInAs"></span>
+    <a id="signOutBtn">Sign out</a>
+  </div>
+
+  <div id="cards" hidden>
+    <div class="card" id="stravaCard">
+      <div>
+        <div class="card-title">Strava</div>
+        <div class="card-sub" id="stravaStatus">Not connected</div>
+      </div>
+      <button id="stravaBtn">Connect Strava</button>
+    </div>
+
+    <div class="card disabled">
+      <div>
+        <div class="card-title">WHOOP</div>
+        <div class="card-sub">Coming soon</div>
+      </div>
+      <button disabled>Connect WHOOP</button>
+    </div>
+
+    <div class="card disabled">
+      <div>
+        <div class="card-title">Garmin</div>
+        <div class="card-sub">Coming soon — unofficial integration, more on that when this goes live</div>
+      </div>
+      <button disabled>Connect Garmin</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// --- Config ---
+const SUPABASE_URL = "https://rafovizzmempbkoavnck.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pbvoqAM4PuVT3Gzg4IbDRw_q-6ySUSn";
+
+// TODO: fill in your Strava Client ID (safe to hardcode — it's designed to
+// appear in this public authorize URL, unlike the client secret).
+const STRAVA_CLIENT_ID = "279952";
+const STRAVA_REDIRECT_URI = `${SUPABASE_URL}/functions/v1/strava-callback`;
+const STRAVA_SCOPE = "read,activity:read_all";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const el = (id) => document.getElementById(id);
+
+function showBanner(kind, text) {
+  const b = el("banner");
+  b.className = `banner show ${kind}`;
+  b.textContent = text;
+}
+
+// Handle the redirect back from strava-callback (?provider=strava&status=...)
+// then strip those params so a refresh doesn't re-show the banner.
+(function handleCallbackRedirect() {
+  const params = new URLSearchParams(location.search);
+  const provider = params.get("provider");
+  const status = params.get("status");
+  if (!provider || !status) return;
+
+  if (status === "connected") {
+    showBanner("ok", `${provider[0].toUpperCase()}${provider.slice(1)} connected.`);
+  } else {
+    const reason = params.get("reason") || "unknown_error";
+    showBanner("err", `Couldn't connect ${provider} (${reason}). Try again.`);
+  }
+  history.replaceState(null, "", location.pathname);
+})();
+
+async function refreshUI() {
+  const { data: { user } } = await sb.auth.getUser();
+
+  if (!user) {
+    el("authBox").hidden = false;
+    el("signedInRow").hidden = true;
+    el("cards").hidden = true;
+    return;
+  }
+
+  el("authBox").hidden = true;
+  el("signedInRow").hidden = false;
+  el("cards").hidden = false;
+  el("signedInAs").textContent = `Signed in as ${user.email}`;
+
+  const { data: connections, error } = await sb.rpc("get_my_connections");
+  if (error) {
+    console.error("get_my_connections failed", error);
+    return;
+  }
+  const strava = (connections || []).find((c) => c.provider === "strava");
+  if (strava) {
+    el("stravaStatus").innerHTML = `<span class="connected-badge">Connected</span> — last synced ${strava.last_synced_at ? new Date(strava.last_synced_at).toLocaleString() : "never yet"}`;
+    el("stravaBtn").textContent = "Reconnect";
+  } else {
+    el("stravaStatus").textContent = "Not connected";
+    el("stravaBtn").textContent = "Connect Strava";
+  }
+}
+
+el("sendLinkBtn").addEventListener("click", async () => {
+  const email = el("emailInput").value.trim();
+  if (!email) return;
+  el("authStatus").textContent = "Sending...";
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: location.href },
+  });
+  el("authStatus").textContent = error ? `Error: ${error.message}` : "Check your email for the sign-in link.";
+});
+
+el("signOutBtn").addEventListener("click", async () => {
+  await sb.auth.signOut();
+  refreshUI();
+});
+
+el("stravaBtn").addEventListener("click", async () => {
+  el("stravaBtn").disabled = true;
+  const { data: state, error } = await sb.rpc("create_oauth_state", { p_provider: "strava" });
+  if (error) {
+    showBanner("err", `Couldn't start the Strava connection: ${error.message}`);
+    el("stravaBtn").disabled = false;
+    return;
+  }
+  const authorizeUrl = new URL("https://www.strava.com/oauth/authorize");
+  authorizeUrl.searchParams.set("client_id", STRAVA_CLIENT_ID);
+  authorizeUrl.searchParams.set("redirect_uri", STRAVA_REDIRECT_URI);
+  authorizeUrl.searchParams.set("response_type", "code");
+  authorizeUrl.searchParams.set("approval_prompt", "auto");
+  authorizeUrl.searchParams.set("scope", STRAVA_SCOPE);
+  authorizeUrl.searchParams.set("state", state);
+  location.href = authorizeUrl.toString();
+});
+
+sb.auth.onAuthStateChange(() => refreshUI());
+refreshUI();
+</script>
+</body>
+</html>
