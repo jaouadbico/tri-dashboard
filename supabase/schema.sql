@@ -12,6 +12,27 @@
 create extension if not exists pgcrypto;
 create extension if not exists supabase_vault;
 
+-- Postgres grants EXECUTE on every new function to PUBLIC by default, and
+-- Supabase's own project setup separately grants it to
+-- anon/authenticated/service_role on every new function in this schema —
+-- both fire automatically at creation time. This is exactly how
+-- upsert_connection and get_decrypted_tokens ended up callable by
+-- anonymous requests despite an explicit per-function revoke sitting in
+-- this file: the file was correct, but the live database had never been
+-- re-run against it since that fix was added.
+--
+-- Both statements below are required, not redundant: per Postgres's own
+-- docs, a schema-scoped ALTER DEFAULT PRIVILEGES only adds to the global
+-- default — it cannot override or narrow it. The first (global, no IN
+-- SCHEMA) removes the PUBLIC-on-every-function baseline; the second
+-- (schema-scoped) additionally removes Supabase's own
+-- anon/authenticated grant for this schema. Neither is retroactive — they
+-- only affect functions created after this runs, which is why the
+-- explicit per-function revokes elsewhere in this file still matter for
+-- the functions that already exist.
+alter default privileges revoke execute on functions from public;
+alter default privileges in schema public revoke execute on functions from anon, authenticated;
+
 -- One row per (user, provider) OAuth connection. access_token_id /
 -- refresh_token_id point into vault.secrets; the plaintext tokens are never
 -- stored on this table. RLS below means the frontend can't read this table
@@ -158,25 +179,30 @@ begin
       v_refresh_id := existing.refresh_token_id;
     end if;
 
+    -- last_synced_at is deliberately untouched here — this function is
+    -- about token lifecycle (store/rotate credentials), not data freshness.
+    -- Only the sync function itself sets last_synced_at, once a pull of
+    -- actual activity data succeeds.
     update connections set
       access_token_id = v_access_id,
       refresh_token_id = v_refresh_id,
       expires_at = p_expires_at,
       scope = p_scope,
-      provider_athlete_id = p_provider_athlete_id,
-      last_synced_at = now()
+      provider_athlete_id = p_provider_athlete_id
     where id = existing.id;
   else
     v_access_id := vault.create_secret(p_access_token);
     v_refresh_id := case when p_refresh_token is not null
       then vault.create_secret(p_refresh_token) else null end;
 
+    -- last_synced_at stays NULL until a real sync happens — connecting
+    -- an account is not the same as having pulled any data from it yet.
     insert into connections (
       user_id, provider, access_token_id, refresh_token_id,
-      expires_at, scope, provider_athlete_id, connected_at, last_synced_at
+      expires_at, scope, provider_athlete_id, connected_at
     ) values (
       p_user_id, p_provider, v_access_id, v_refresh_id,
-      p_expires_at, p_scope, p_provider_athlete_id, now(), now()
+      p_expires_at, p_scope, p_provider_athlete_id, now()
     );
   end if;
 end;
@@ -255,3 +281,41 @@ $$;
 
 revoke execute on function create_oauth_state(text) from public, anon;
 grant execute on function create_oauth_state(text) to authenticated;
+
+-- ---------------------------------------------------------------------
+-- Synced activity data. Unlike `connections`, this is not sensitive —
+-- it's the actual training data a user wants to see, so a normal RLS
+-- SELECT policy (read your own rows) is the right call here, not a
+-- zero-policy lockdown. Writes are a different story: only the sync
+-- Edge Function (service_role) should ever insert/update rows, so
+-- there are deliberately no insert/update/delete policies for the
+-- client — a user can't forge or tamper with their own activity history
+-- by writing directly to this table.
+-- ---------------------------------------------------------------------
+create table if not exists activities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider text not null check (provider in ('strava', 'whoop', 'garmin')),
+  provider_activity_id text not null,
+  date date not null,
+  sport text not null check (sport in ('Run', 'Bike', 'Swim', 'Strength', 'Recovery', 'Cross')),
+  duration numeric,   -- minutes, matching the convention already used by
+                       -- garmin_activities.json / workouts.json elsewhere
+                       -- in this app
+  distance numeric,   -- miles, same convention
+  notes text,
+  raw_payload jsonb,  -- full original API response for this activity — lets
+                      -- us improve sport-mapping or pull new fields later
+                      -- without re-fetching, which may not even be possible
+                      -- for older activities depending on provider retention
+  synced_at timestamptz not null default now(),
+  unique (user_id, provider, provider_activity_id)
+);
+
+create index if not exists activities_user_date_idx on activities (user_id, date);
+
+alter table activities enable row level security;
+
+create policy "users can view own activities"
+  on activities for select
+  using (auth.uid() = user_id);
