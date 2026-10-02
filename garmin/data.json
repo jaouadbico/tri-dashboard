@@ -420,13 +420,39 @@
     },
     "2026-09-30": {
       "date": "2026-09-30",
-      "resting_hr": null,
-      "steps": null,
-      "stress_avg": null,
-      "body_battery_start": null,
+      "resting_hr": 60,
+      "steps": 3366,
+      "stress_avg": 50,
+      "body_battery_start": 43,
       "sleep_hours": null,
       "sleep_score": null,
-      "hrv_overnight_ms": null
+      "hrv_overnight_ms": null,
+      "body_battery_low": 38,
+      "body_battery_high": 54
+    },
+    "2026-10-01": {
+      "date": "2026-10-01",
+      "resting_hr": 55,
+      "steps": 3670,
+      "stress_avg": 24,
+      "body_battery_start": 77,
+      "sleep_hours": 8.9,
+      "sleep_score": 76,
+      "hrv_overnight_ms": 39,
+      "body_battery_low": 43,
+      "body_battery_high": 82
+    },
+    "2026-10-02": {
+      "date": "2026-10-02",
+      "resting_hr": 55,
+      "steps": 1409,
+      "stress_avg": 27,
+      "body_battery_start": 67,
+      "sleep_hours": null,
+      "sleep_score": null,
+      "hrv_overnight_ms": null,
+      "body_battery_low": 67,
+      "body_battery_high": 77
     }
   },
   "activities": {
@@ -1875,12 +1901,12 @@
       "endTimeGMT": "2026-09-30 03:10:15",
       "qualifyingDive": false,
       "activityUUID": "84822cbc-4100-4524-963a-32c2bde82f85",
-      "parent": false,
-      "decoDive": false,
+      "pr": false,
       "favorite": false,
       "purposeful": false,
+      "parent": false,
+      "decoDive": false,
       "manualActivity": false,
-      "pr": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
       "atpActivity": false
@@ -2016,16 +2042,16 @@
       "endTimeGMT": "2026-09-29 17:41:51",
       "qualifyingDive": false,
       "activityUUID": "e87a303f-fe80-4432-bcac-93963855963f",
-      "parent": false,
-      "decoDive": false,
+      "pr": false,
       "favorite": false,
       "purposeful": false,
+      "parent": false,
+      "decoDive": false,
       "manualActivity": false,
-      "pr": false,
       "autoCalcCalories": false,
       "elevationCorrected": false,
       "atpActivity": false
     }
   },
-  "last_updated": "2026-09-30T06:01:14.916047"
+  "last_updated": "2026-10-02T06:01:17.532555"
 }
