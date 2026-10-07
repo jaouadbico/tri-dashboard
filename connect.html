@@ -62,7 +62,10 @@
         <div class="card-title">Strava</div>
         <div class="card-sub" id="stravaStatus">Not connected</div>
       </div>
-      <button id="stravaBtn">Connect Strava</button>
+      <div style="display:flex;gap:8px;">
+        <button id="stravaSyncBtn" class="ghost" hidden>Sync now</button>
+        <button id="stravaBtn">Connect Strava</button>
+      </div>
     </div>
 
     <div class="card disabled">
@@ -145,11 +148,41 @@ async function refreshUI() {
   if (strava) {
     el("stravaStatus").innerHTML = `<span class="connected-badge">Connected</span> — last synced ${strava.last_synced_at ? new Date(strava.last_synced_at).toLocaleString() : "never yet"}`;
     el("stravaBtn").textContent = "Reconnect";
+    el("stravaSyncBtn").hidden = false;
   } else {
     el("stravaStatus").textContent = "Not connected";
     el("stravaBtn").textContent = "Connect Strava";
+    el("stravaSyncBtn").hidden = true;
   }
 }
+
+el("stravaSyncBtn").addEventListener("click", async () => {
+  const btn = el("stravaSyncBtn");
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Syncing...";
+  try {
+    // functions.invoke() attaches the current session's Authorization
+    // header automatically — that's what strava-sync's getUser() call
+    // verifies on the other end.
+    const { data, error } = await sb.functions.invoke("strava-sync", { body: {} });
+    if (error) {
+      showBanner("err", `Sync failed: ${error.message}`);
+    } else if (data.status === "reconnect_needed") {
+      showBanner("err", `Strava connection needs to be reconnected (${data.reason}).`);
+    } else if (data.status === "ok") {
+      showBanner("ok", `Synced ${data.activities_synced} activit${data.activities_synced === 1 ? "y" : "ies"}.`);
+    } else {
+      showBanner("err", `Sync returned an unexpected status: ${data.status}`);
+    }
+  } catch (e) {
+    showBanner("err", `Sync failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+    refreshUI();
+  }
+});
 
 el("sendLinkBtn").addEventListener("click", async () => {
   const email = el("emailInput").value.trim();

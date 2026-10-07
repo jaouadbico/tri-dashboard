@@ -183,12 +183,16 @@ begin
     -- about token lifecycle (store/rotate credentials), not data freshness.
     -- Only the sync function itself sets last_synced_at, once a pull of
     -- actual activity data succeeds.
+    -- coalesce, not a plain overwrite: a token-refresh call has no scope
+    -- or athlete id to report (Strava's refresh response includes neither,
+    -- only the original authorize exchange does) — passing null here must
+    -- not erase what a successful connect already recorded.
     update connections set
       access_token_id = v_access_id,
       refresh_token_id = v_refresh_id,
       expires_at = p_expires_at,
-      scope = p_scope,
-      provider_athlete_id = p_provider_athlete_id
+      scope = coalesce(p_scope, existing.scope),
+      provider_athlete_id = coalesce(p_provider_athlete_id, existing.provider_athlete_id)
     where id = existing.id;
   else
     v_access_id := vault.create_secret(p_access_token);
