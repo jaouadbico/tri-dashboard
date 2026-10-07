@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-09-30T06:01:14.919772Z",
+  "syncedAt": "2026-10-07T18:50:32.129350Z",
   "source": "Garmin Connect (sync_garmin.py)",
   "workouts": [
     {
@@ -81,6 +81,30 @@
       "duration": 15.4,
       "distance": 0.37,
       "notes": "Pool Swim"
+    },
+    {
+      "activityId": 24582379251,
+      "date": "2026-10-02",
+      "sport": "Bike",
+      "duration": 45.4,
+      "distance": 12.79,
+      "notes": "Virtual Cycling"
+    },
+    {
+      "activityId": 24597201475,
+      "date": "2026-10-03",
+      "sport": "Strength",
+      "duration": 26.8,
+      "distance": null,
+      "notes": "Strength"
+    },
+    {
+      "activityId": 24633886662,
+      "date": "2026-10-06",
+      "sport": "Bike",
+      "duration": 77.4,
+      "distance": 18.88,
+      "notes": "Zwift - Zone Benchmarking"
     }
   ]
 }
