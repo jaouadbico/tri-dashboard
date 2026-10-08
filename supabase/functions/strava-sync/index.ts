@@ -212,6 +212,16 @@ Deno.serve(async (req: Request) => {
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
+    // Strava reports real usage on every response, success or not — format
+    // is "15-min,daily" for both. Logged so a backfill's actual rate-limit
+    // consumption can be checked afterward via `supabase functions logs
+    // strava-sync`, instead of guessing from request counts.
+    const rlLimit = resp.headers.get("X-RateLimit-Limit");
+    const rlUsage = resp.headers.get("X-RateLimit-Usage");
+    if (rlLimit || rlUsage) {
+      console.log(`Strava rate limit — limit: ${rlLimit}, usage: ${rlUsage} (page ${page})`);
+    }
+
     if (resp.status === 429) {
       console.error("Strava activities fetch rate-limited on page", page);
       rateLimitedMidway = true;
@@ -232,8 +242,12 @@ Deno.serve(async (req: Request) => {
 
   const rows = [];
   for (const a of allActivities) {
-    const sport = STRAVA_TYPE_TO_SPORT[a.type as string];
-    if (!sport) continue; // skip activity types we don't map (Yoga, RockClimbing, etc.)
+    // Anything not explicitly mapped falls through to Cross rather than
+    // being dropped — matches this app's existing vocabulary elsewhere
+    // (Cross = "Cross-training, soccer, etc."), and means a sync can never
+    // silently lose an activity just because its Strava type isn't one
+    // we've named yet.
+    const sport = STRAVA_TYPE_TO_SPORT[a.type as string] ?? "Cross";
     const distanceM = (a.distance as number) || 0;
     rows.push({
       user_id: userId,
