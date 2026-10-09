@@ -517,14 +517,26 @@
     "2026-10-08": {
       "date": "2026-10-08",
       "resting_hr": 51,
-      "steps": 945,
-      "stress_avg": 16,
-      "body_battery_start": 86,
+      "steps": 3179,
+      "stress_avg": 23,
+      "body_battery_start": 40,
       "sleep_hours": 9.5,
       "sleep_score": 83,
       "hrv_overnight_ms": 51,
       "body_battery_low": 16,
       "body_battery_high": 96
+    },
+    "2026-10-09": {
+      "date": "2026-10-09",
+      "resting_hr": 56,
+      "steps": 124,
+      "stress_avg": 51,
+      "body_battery_start": 38,
+      "sleep_hours": null,
+      "sleep_score": null,
+      "hrv_overnight_ms": null,
+      "body_battery_low": 38,
+      "body_battery_high": 40
     }
   },
   "activities": {
@@ -2281,15 +2293,15 @@
       "endTimeGMT": "2026-10-07 00:21:53",
       "qualifyingDive": false,
       "activityUUID": "52334760-0179-4192-a56d-205a2d497c23",
-      "pr": true,
-      "favorite": false,
-      "purposeful": false,
-      "parent": false,
-      "decoDive": false,
-      "manualActivity": false,
       "autoCalcCalories": false,
+      "favorite": false,
+      "decoDive": false,
       "elevationCorrected": false,
-      "atpActivity": false
+      "atpActivity": false,
+      "parent": false,
+      "purposeful": false,
+      "manualActivity": false,
+      "pr": true
     },
     "24597201475": {
       "activityId": 24597201475,
@@ -2430,15 +2442,15 @@
       "endTimeGMT": "2026-10-04 04:16:44",
       "qualifyingDive": false,
       "activityUUID": "e8a4c3d0-caf8-425f-9e9f-26b444336038",
-      "pr": false,
-      "favorite": false,
-      "purposeful": false,
-      "parent": false,
-      "decoDive": false,
-      "manualActivity": false,
       "autoCalcCalories": false,
+      "favorite": false,
+      "decoDive": false,
       "elevationCorrected": false,
-      "atpActivity": false
+      "atpActivity": false,
+      "parent": false,
+      "purposeful": false,
+      "manualActivity": false,
+      "pr": false
     },
     "24582379251": {
       "activityId": 24582379251,
@@ -2607,5 +2619,5 @@
       "atpActivity": false
     }
   },
-  "last_updated": "2026-10-08T12:38:31.259998"
+  "last_updated": "2026-10-09T06:01:18.319769"
 }
