@@ -236,7 +236,6 @@ Deno.serve(async (req: Request) => {
   const { data: otpData, error: otpErr } = await plainClient.auth.verifyOtp({
     type: "magiclink",
     token_hash: linkData.properties.hashed_token,
-    email: userEmail,
   });
   if (otpErr || !otpData.session) {
     console.error("verifyOtp failed:", otpErr);
