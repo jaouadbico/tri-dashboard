@@ -1,0 +1,10 @@
+# Personal training/health data — stays local, never published.
+# The whole garmin/ folder: sync_garmin.py writes daily/*.md,
+# activities/*.md, and data.json here by default, and any future output
+# it writes into this folder should stay untracked too.
+garmin/
+garmin.json
+garmin_activities.json
+whoop.json
+workouts.json
+coach.json

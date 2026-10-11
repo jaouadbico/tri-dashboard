@@ -1,15 +1,17 @@
-// Bump this string any time you re-upload index.html/workouts.json/whoop.json
+// Bump this string any time you re-upload index.html/plan.html/coach.html
 // so iOS knows to fetch fresh copies instead of serving the old cache.
-const CACHE_NAME = 'atlas703-cache-v3';
+const CACHE_NAME = 'atlas703-cache-v5';
 
+// workouts.json/whoop.json/coach.json removed: no longer published (moved
+// out of the public repo as personal data). cache.addAll() rejects the
+// WHOLE install if any single URL in this list 404s, so a stale entry here
+// doesn't just lose one cached file — it fails the entire service worker
+// installation.
 const CORE_ASSETS = [
   './',
   './index.html',
   './plan.html',
   './coach.html',
-  './workouts.json',
-  './whoop.json',
-  './coach.json',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
