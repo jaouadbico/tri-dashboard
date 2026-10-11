@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
@@ -243,7 +244,7 @@
     <canvas id="distanceChart" height="110"></canvas>
   </div>
 
-  <div class="panel" style="border-color:rgba(167,139,250,0.3);">
+  <div class="panel" id="whoopPanel" style="border-color:rgba(167,139,250,0.3);">
     <h2 style="--tw:0;"><span style="width:3px;height:14px;background:var(--purple);display:inline-block;margin-right:-4px;"></span>Recovery & Readiness — WHOOP</h2>
     <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;" id="whoopAvgLabel"></div>
     <div class="ring-row" id="whoopRings"></div>
@@ -267,7 +268,7 @@
     </div>
   </div>
 
-  <div class="panel" style="border-color:rgba(74,222,128,0.3);">
+  <div class="panel" id="garminPanel" style="border-color:rgba(74,222,128,0.3);">
     <h2 style="--tw:0;"><span style="width:3px;height:14px;background:#4ade80;display:inline-block;margin-right:-4px;"></span>Recovery & Readiness — Garmin</h2>
     <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;" id="garminAvgLabel"></div>
     <div class="ring-row" id="garminRings"></div>
@@ -387,6 +388,18 @@
 <footer>Runs fully offline &mdash; all data stored in this browser (localStorage). Export JSON regularly to back up or move between devices.</footer>
 
 <script>
+/* ---------------- SUPABASE / AUTH ---------------- */
+const SUPABASE_URL = "https://rafovizzmempbkoavnck.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pbvoqAM4PuVT3Gzg4IbDRw_q-6ySUSn";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Only this user id sees the WHOOP/Garmin wellness panels and has those
+// static JSON files fetched at all. Find yours: sign in at connect.html,
+// open the browser console, run `(await sb.auth.getUser()).data.user.id`.
+const OWNER_USER_ID = "950fb565-e135-4096-8190-f160da01b99c";
+
+let currentUser = null;
+
 /* ---------------- PLAN DEFINITION ---------------- */
 const PHASE_DEFS = [
   {key:'foundation', name:'Foundation', weeks:12, goal:'Build habit, swim technique, ease into bike & run volume'},
@@ -521,28 +534,81 @@ function saveGoals(g){ localStorage.setItem(GOALS_KEY, JSON.stringify(g)); }
 let lifts = loadLifts();
 let liftGoals = loadGoals();
 
-let syncedWorkouts = [];   // from workouts.json
+let syncedWorkouts = [];   // from the activities table (Supabase)
 let manualWorkouts = loadManual();
 let workouts = [];         // combined view, rebuilt by rebuildWorkouts()
 let raceDate = loadRaceDate();
 let milestoneState = loadMilestones();
 let syncInfo = {ok:false, checkedAt:null};
+let latestSyncedAt = null; // Strava connection's last_synced_at, from get_my_connections()
 
 function rebuildWorkouts(){
   workouts = syncedWorkouts.map(w=>({...w, source:'strava'}))
     .concat(manualWorkouts.map(w=>({...w, source:'manual'})));
 }
 
+// Same physical workout can land as more than one row (e.g. a Garmin watch
+// and a WHOOP strap both auto-uploading to Strava independently) — group by
+// date+sport regardless of provider, keep the first entry per cluster, drop
+// later entries within duration tolerance. Provider-agnostic generalization
+// of the dedupe already proven in plan.html.
+function isDurationMatch(a, b){
+  const diff = Math.abs(a - b);
+  const tol = Math.max(5, 0.08 * Math.max(a, b));
+  return diff <= tol;
+}
+function dedupeActivities(allActivities){
+  const groups = {};
+  allActivities.forEach(a=>{
+    const key = a.date+'|'+a.sport;
+    (groups[key] = groups[key] || []).push(a);
+  });
+  const result = [];
+  Object.values(groups).forEach(group=>{
+    const kept = [];
+    group.forEach(a=>{
+      const dup = kept.find(k=> isDurationMatch(k.duration||0, a.duration||0));
+      if(dup){
+        console.log(`[dedupe] Skipped duplicate ${a.sport} on ${a.date} (${a.duration}min, ${a.source}) — already counted via ${dup.source} (${dup.duration}min).`);
+      } else {
+        kept.push(a);
+        result.push(a);
+      }
+    });
+  });
+  return result;
+}
+
+// Strava's raw activity payload has richer fields than the base shape
+// {date, sport, duration, distance, notes} — pull the few the existing
+// badge rendering already knows how to show when present.
+function mapActivityRow(row){
+  const raw = row.raw_payload || {};
+  const out = {
+    date: row.date,
+    sport: row.sport,
+    duration: row.duration,
+    distance: row.distance,
+    notes: row.notes,
+    source: row.provider,
+  };
+  if(raw.average_heartrate != null) out.avgHr = Math.round(raw.average_heartrate);
+  if(raw.average_cadence != null) out.cadence = Math.round(raw.average_cadence);
+  if(raw.total_elevation_gain != null) out.elevation = Math.round(raw.total_elevation_gain * 3.28084); // meters -> feet
+  return out;
+}
+
 async function loadSyncedWorkouts(){
+  if(!currentUser){ syncedWorkouts = []; syncInfo = {ok:false, checkedAt: new Date().toISOString()}; rebuildWorkouts(); return; }
   try{
-    const res = await fetch('workouts.json', {cache:'no-store'});
-    if(!res.ok) throw new Error('no workouts.json');
-    const data = await res.json();
-    syncedWorkouts = data.workouts || [];
-    syncInfo = {ok:true, checkedAt: new Date().toISOString(), syncedAt: data.syncedAt || null};
+    const { data, error } = await sb.from('activities').select('*');
+    if(error) throw error;
+    const mapped = (data || []).map(mapActivityRow);
+    syncedWorkouts = dedupeActivities(mapped);
+    syncInfo = {ok:true, checkedAt: new Date().toISOString(), syncedAt: latestSyncedAt || new Date().toISOString()};
   }catch(e){
-    // No workouts.json found (e.g. running locally via file://, or not uploaded yet) — fall back to seed data
-    syncedWorkouts = SEED_WORKOUTS.slice();
+    console.error('loadSyncedWorkouts failed', e);
+    syncedWorkouts = [];
     syncInfo = {ok:false, checkedAt: new Date().toISOString()};
   }
   rebuildWorkouts();
@@ -566,14 +632,10 @@ function rebuildWhoop(){
   whoopEntries = Object.values(byDate).sort((a,b)=> new Date(a.date)-new Date(b.date));
 }
 async function loadSyncedWhoop(){
-  try{
-    const res = await fetch('whoop.json', {cache:'no-store'});
-    if(!res.ok) throw new Error('no whoop.json');
-    const data = await res.json();
-    syncedWhoop = data.entries || [];
-  }catch(e){
-    syncedWhoop = SEED_WHOOP.slice();
-  }
+  // whoop.json is no longer published (personal data moved out of the
+  // public repo) — skip the fetch rather than let it 404 on every load.
+  // Panel/rendering code untouched; this data moves to Supabase later.
+  syncedWhoop = SEED_WHOOP.slice();
   rebuildWhoop();
 }
 
@@ -604,14 +666,10 @@ function rebuildGarmin(){
 }
 
 async function loadSyncedGarmin(){
-  try{
-    const res = await fetch('garmin.json', {cache:'no-store'});
-    if(!res.ok) throw new Error('no garmin.json');
-    const data = await res.json();
-    syncedGarmin = data.entries || [];
-  }catch(e){
-    syncedGarmin = SEED_GARMIN.slice();
-  }
+  // garmin.json is no longer published (personal data moved out of the
+  // public repo) — skip the fetch rather than let it 404 on every load.
+  // Panel/rendering code untouched; this data moves to Supabase later.
+  syncedGarmin = SEED_GARMIN.slice();
   rebuildGarmin();
 }
 
@@ -1503,7 +1561,7 @@ function renderSyncStatus(){
     const when = syncInfo.syncedAt ? new Date(syncInfo.syncedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'unknown';
     el.innerHTML = `<span style="color:var(--green);">\u25CF</span> synced ${when}`;
   } else {
-    el.innerHTML = `<span style="color:var(--amber);">\u25CF</span> no workouts.json \u2014 using seed data`;
+    el.innerHTML = `<span style="color:var(--amber);">\u25CF</span> couldn't load synced data`;
   }
 }
 function renderAll(){
@@ -1526,9 +1584,46 @@ function renderAll(){
   renderStrength();
 }
 async function init(){
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user){
+    location.href = 'connect.html';
+    return;
+  }
+  currentUser = user;
+  const isOwner = user.id === OWNER_USER_ID;
+
+  // WHOOP/Garmin wellness data has no per-user Supabase sync yet — it's
+  // owner-only static files. Never fetched (not just hidden) for anyone else.
+  if(!isOwner){
+    document.getElementById('whoopPanel').hidden = true;
+    document.getElementById('garminPanel').hidden = true;
+  }
+
+  // Daily sync without cron: if Strava hasn't synced in >6h (or never),
+  // sync now before loading, so the data shown is current.
+  try{
+    const { data: connections } = await sb.rpc('get_my_connections');
+    const strava = (connections || []).find(c => c.provider === 'strava');
+    if(strava){
+      latestSyncedAt = strava.last_synced_at;
+      const staleMs = 6 * 60 * 60 * 1000;
+      const isStale = !strava.last_synced_at || (Date.now() - new Date(strava.last_synced_at).getTime() > staleMs);
+      if(isStale){
+        const { data: syncResult, error: syncErr } = await sb.functions.invoke('strava-sync');
+        if(syncErr) console.error('auto-sync failed', syncErr);
+        else if(syncResult?.status === 'ok') latestSyncedAt = new Date().toISOString();
+        else if(syncResult?.status === 'reconnect_needed') console.warn('Strava needs reconnecting:', syncResult.reason);
+      }
+    }
+  }catch(e){
+    console.error('auto-sync check failed', e);
+  }
+
   document.getElementById('raceDateInput').value = raceDate;
   initProfileForm();
-  await Promise.all([loadSyncedWorkouts(), loadSyncedWhoop(), loadSyncedGarmin()]);
+  const loaders = [loadSyncedWorkouts()];
+  if(isOwner) loaders.push(loadSyncedWhoop(), loadSyncedGarmin());
+  await Promise.all(loaders);
   renderAll();
 }
 init();

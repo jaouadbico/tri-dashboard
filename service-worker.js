@@ -1,6 +1,6 @@
 // Bump this string any time you re-upload index.html/plan.html/coach.html
 // so iOS knows to fetch fresh copies instead of serving the old cache.
-const CACHE_NAME = 'atlas703-cache-v5';
+const CACHE_NAME = 'atlas703-cache-v6';
 
 // workouts.json/whoop.json/coach.json removed: no longer published (moved
 // out of the public repo as personal data). cache.addAll() rejects the
@@ -37,6 +37,9 @@ self.addEventListener('activate', (event) => {
 // Network-first for our own files (so you get fresh data when online),
 // falling back to cache when offline (e.g. mid-workout with no signal).
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  const u = new URL(event.request.url);
+  if (u.hostname.endsWith('supabase.co')) return;
   const url = new URL(event.request.url);
   const isOwnFile = url.origin === self.location.origin;
 

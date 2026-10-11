@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
@@ -277,6 +278,12 @@
 <footer>Program regenerates automatically from your race date and current phase &mdash; edit your race date on the Stats Dashboard and this updates too.</footer>
 
 <script>
+/* ---------------- SUPABASE / AUTH ---------------- */
+const SUPABASE_URL = "https://rafovizzmempbkoavnck.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pbvoqAM4PuVT3Gzg4IbDRw_q-6ySUSn";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let currentUser = null;
+
 /* ---------------- GROUNDING DATA (from your logged history) ---------------- */
 // These are the real numbers established from your Strava/WHOOP data.
 // Update RACE_DATE here to match whatever's set on the Stats Dashboard.
@@ -616,9 +623,9 @@ function clearReschedule(key){
   renderAll();
 }
 
-/* ---------------- SYNCED ACTUAL WORKOUTS (Strava workouts.json + Garmin garmin_activities.json) ---------------- */
-// Sport-name normalization so the two sources compare cleanly even if one
-// uses different casing/wording (e.g. "running" vs "Run").
+/* ---------------- SYNCED ACTUAL WORKOUTS (from the activities table) ---------------- */
+// Sport-name normalization, kept as a defensive pass even though the
+// activities table already enforces canonical values at write time.
 function normalizeSport(sport){
   const s = (sport||'').trim().toLowerCase();
   const map = {
@@ -633,61 +640,81 @@ function normalizeSport(sport){
   return map[s] || (sport ? sport.trim() : sport);
 }
 
-// Two entries (one Strava, one Garmin) on the same date/sport are treated as
-// the same physical workout if their durations are close — Strava often
-// mirrors the exact same Garmin-device activity, so without this, summing
-// both would double-count minutes toward weekly volume.
+// Same physical workout can land as more than one row (e.g. a Garmin watch
+// and a WHOOP strap both auto-uploading to Strava independently) — treated
+// as the same workout if same date+sport and durations are close.
 function isDurationMatch(a, b){
   const diff = Math.abs(a - b);
   const tol = Math.max(5, 0.08 * Math.max(a, b));
   return diff <= tol;
 }
 
-// syncedWorkouts: raw combined list (both sources) — used for existence
-// checks (hasActualOnDate/findActual), where a duplicate doesn't matter.
-// volumeWorkouts: deduped list — used only for actualMinutes (weekly totals),
-// where a duplicate would double-count minutes.
+// syncedWorkouts: raw list — used for existence checks (hasActualOnDate/
+// findActual), where a duplicate doesn't matter.
+// volumeWorkouts: deduped list — used only for actualMinutes (weekly
+// totals), where a duplicate would double-count minutes.
 let syncedWorkouts = [];
 let volumeWorkouts = [];
 let syncOk = false;
 
-function dedupeForVolume(stravaList, garminList){
+// Provider-agnostic: group by date+sport, keep the first entry per cluster,
+// drop later entries within duration tolerance regardless of which
+// provider they came from.
+function dedupeActivities(allActivities){
   const groups = {};
-  stravaList.forEach(w=>{
-    const key = w.date+'|'+w.sport;
-    (groups[key] = groups[key] || {strava:[], garmin:[]}).strava.push(w);
-  });
-  garminList.forEach(w=>{
-    const key = w.date+'|'+w.sport;
-    (groups[key] = groups[key] || {strava:[], garmin:[]}).garmin.push(w);
+  allActivities.forEach(a=>{
+    const key = a.date+'|'+a.sport;
+    (groups[key] = groups[key] || []).push(a);
   });
   const result = [];
   Object.values(groups).forEach(group=>{
-    group.strava.forEach(w=>result.push(w));
-    const usedStrava = new Set();
-    group.garmin.forEach(gw=>{
-      const matchIdx = group.strava.findIndex((sw,idx)=> !usedStrava.has(idx) && isDurationMatch(sw.duration, gw.duration));
-      if(matchIdx>-1){
-        usedStrava.add(matchIdx);
-        console.log(`[volume-dedupe] Skipped Garmin "${gw.sport}" on ${gw.date} (${gw.duration}min) — already counted via Strava (${group.strava[matchIdx].duration}min).`);
+    const kept = [];
+    group.forEach(a=>{
+      const dup = kept.find(k=> isDurationMatch(k.duration||0, a.duration||0));
+      if(dup){
+        console.log(`[dedupe] Skipped duplicate ${a.sport} on ${a.date} (${a.duration}min, ${a.source}) — already counted via ${dup.source} (${dup.duration}min).`);
       } else {
-        result.push(gw);
+        kept.push(a);
+        result.push(a);
       }
     });
   });
   return result;
 }
 
+// Strava's raw activity payload has richer fields than the base shape —
+// pull the few the existing rendering already knows how to show when
+// present (same mapping as index.html).
+function mapActivityRow(row){
+  const raw = row.raw_payload || {};
+  const out = {
+    date: row.date,
+    sport: normalizeSport(row.sport),
+    duration: row.duration,
+    distance: row.distance,
+    notes: row.notes,
+    source: row.provider,
+  };
+  if(raw.average_heartrate != null) out.avgHr = Math.round(raw.average_heartrate);
+  if(raw.average_cadence != null) out.cadence = Math.round(raw.average_cadence);
+  if(raw.total_elevation_gain != null) out.elevation = Math.round(raw.total_elevation_gain * 3.28084); // meters -> feet
+  return out;
+}
+
 async function loadSyncedActuals(){
-  const [stravaData, garminData] = await Promise.all([
-    fetch('workouts.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch('garmin_activities.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null),
-  ]);
-  const stravaWorkouts = (stravaData?.workouts || []).map(w=>({...w, sport:normalizeSport(w.sport), source:'strava'}));
-  const garminWorkouts = (garminData?.workouts || []).map(w=>({...w, sport:normalizeSport(w.sport), source:'garmin'}));
-  syncedWorkouts = stravaWorkouts.concat(garminWorkouts);
-  volumeWorkouts = dedupeForVolume(stravaWorkouts, garminWorkouts);
-  syncOk = !!stravaData || !!garminData;
+  if(!currentUser){ syncedWorkouts = []; volumeWorkouts = []; syncOk = false; return; }
+  try{
+    const { data, error } = await sb.from('activities').select('*');
+    if(error) throw error;
+    syncedWorkouts = (data || []).map(mapActivityRow);
+    volumeWorkouts = dedupeActivities(syncedWorkouts);
+    syncOk = true;
+  }catch(e){
+    console.error('loadSyncedActuals failed', e);
+    syncedWorkouts = [];
+    volumeWorkouts = [];
+    syncOk = false;
+  }
 }
 // Real logged minutes for a given sport within [startDate, endDate] inclusive (both ISO strings)
 function actualMinutes(sport, startDate, endDate){
@@ -1112,6 +1139,31 @@ function autoExpandCurrentPhase(){
   }
 }
 async function init(){
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user){
+    location.href = 'connect.html';
+    return;
+  }
+  currentUser = user;
+
+  // Daily sync without cron: if Strava hasn't synced in >6h (or never),
+  // sync now before loading, so the data shown is current.
+  try{
+    const { data: connections } = await sb.rpc('get_my_connections');
+    const strava = (connections || []).find(c => c.provider === 'strava');
+    if(strava){
+      const staleMs = 6 * 60 * 60 * 1000;
+      const isStale = !strava.last_synced_at || (Date.now() - new Date(strava.last_synced_at).getTime() > staleMs);
+      if(isStale){
+        const { data: syncResult, error: syncErr } = await sb.functions.invoke('strava-sync');
+        if(syncErr) console.error('auto-sync failed', syncErr);
+        else if(syncResult?.status === 'reconnect_needed') console.warn('Strava needs reconnecting:', syncResult.reason);
+      }
+    }
+  }catch(e){
+    console.error('auto-sync check failed', e);
+  }
+
   await loadSyncedActuals();
   renderAll();
 }
