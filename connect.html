@@ -46,6 +46,8 @@
 
   <div id="authBox" class="auth-box">
     <div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Sign in to manage your connections</div>
+    <button id="stravaLoginBtn" style="background:#fc4c02;width:100%;padding:12px;margin-bottom:16px;">Continue with Strava</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:16px;">— or —</div>
     <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email">
     <button id="sendLinkBtn">Send magic link</button>
     <div id="authStatus" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
@@ -119,10 +121,35 @@ function showBanner(kind, text) {
     showBanner("ok", `${provider[0].toUpperCase()}${provider.slice(1)} connected.`);
   } else {
     const reason = params.get("reason") || "unknown_error";
-    showBanner("err", `Couldn't connect ${provider} (${reason}). Try again.`);
+    if (reason === "not_invited") {
+      showBanner("err", "This app is invite-only right now — your Strava account isn't on the list.");
+    } else {
+      showBanner("err", `Couldn't connect ${provider} (${reason}). Try again.`);
+    }
   }
   history.replaceState(null, "", location.pathname);
 })();
+
+// Handle the redirect back from a "Continue with Strava" login — the
+// session travels in the URL fragment, never a query string, so it's
+// never sent to or logged by any server. Read it once, establish the
+// session, then strip the fragment immediately.
+async function handleLoginRedirect() {
+  if (!location.hash.includes("access_token=")) return false;
+  const params = new URLSearchParams(location.hash.slice(1));
+  const access_token = params.get("access_token");
+  const refresh_token = params.get("refresh_token");
+  history.replaceState(null, "", location.pathname + location.search);
+  if (!access_token || !refresh_token) return false;
+  const { error } = await sb.auth.setSession({ access_token, refresh_token });
+  if (error) {
+    console.error("setSession failed", error);
+    showBanner("err", "Sign-in failed — try Continue with Strava again.");
+    return false;
+  }
+  showBanner("ok", "Signed in with Strava.");
+  return true;
+}
 
 async function refreshUI() {
   const { data: { user } } = await sb.auth.getUser();
@@ -218,8 +245,29 @@ el("stravaBtn").addEventListener("click", async () => {
   location.href = authorizeUrl.toString();
 });
 
+el("stravaLoginBtn").addEventListener("click", async () => {
+  el("stravaLoginBtn").disabled = true;
+  // anon-callable — unlike create_oauth_state above, this works with no
+  // session at all, since there's no user yet to tie the state to.
+  const { data: state, error } = await sb.rpc("create_oauth_login_state", { p_provider: "strava" });
+  if (error) {
+    showBanner("err", `Couldn't start Strava sign-in: ${error.message}`);
+    el("stravaLoginBtn").disabled = false;
+    return;
+  }
+  const authorizeUrl = new URL("https://www.strava.com/oauth/authorize");
+  authorizeUrl.searchParams.set("client_id", STRAVA_CLIENT_ID);
+  authorizeUrl.searchParams.set("redirect_uri", STRAVA_REDIRECT_URI);
+  authorizeUrl.searchParams.set("response_type", "code");
+  authorizeUrl.searchParams.set("approval_prompt", "auto");
+  authorizeUrl.searchParams.set("scope", STRAVA_SCOPE);
+  authorizeUrl.searchParams.set("state", state);
+  // Full-page redirect only for now, as planned — popup mode comes later.
+  location.href = authorizeUrl.toString();
+});
+
 sb.auth.onAuthStateChange(() => refreshUI());
-refreshUI();
+handleLoginRedirect().then(() => refreshUI());
 </script>
 </body>
 </html>

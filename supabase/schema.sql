@@ -83,9 +83,17 @@ begin
 end;
 $$;
 
+-- AFTER, not BEFORE: a BEFORE DELETE trigger tries to delete the
+-- vault.secrets row while the connections row referencing it (via
+-- access_token_id/refresh_token_id, both FKs into vault.secrets) still
+-- exists — Postgres correctly refuses that as a foreign-key violation,
+-- blocking the connections delete entirely. AFTER DELETE fires once the
+-- connections row is actually gone, so the now-orphaned secret can be
+-- removed without violating anything. Found via a real delete that
+-- wouldn't go through.
 drop trigger if exists connections_cleanup_secrets on connections;
 create trigger connections_cleanup_secrets
-  before delete on connections
+  after delete on connections
   for each row
   execute function cleanup_connection_secrets();
 
@@ -285,6 +293,59 @@ $$;
 
 revoke execute on function create_oauth_state(text) from public, anon;
 grant execute on function create_oauth_state(text) to authenticated;
+
+-- Sign-in via Strava ("Continue with Strava"): the caller has no session
+-- at all yet, so there's no auth.uid() to tie a state to — unlike
+-- create_oauth_state above (authenticated-only), this is anon-callable
+-- and inserts user_id = NULL. strava-callback branches on whether the
+-- matched oauth_states row has a user_id: present -> existing "connect"
+-- flow (unchanged); NULL -> "login" flow (find-or-create user, mint a
+-- session). Self-cleaning: sweeps rows older than 10 minutes on every
+-- call, so abandoned login attempts don't accumulate.
+alter table oauth_states alter column user_id drop not null;
+
+create or replace function create_oauth_login_state(p_provider text)
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_state text;
+begin
+  if p_provider not in ('strava', 'whoop') then
+    raise exception 'invalid provider: %', p_provider;
+  end if;
+  delete from oauth_states where created_at < now() - interval '10 minutes';
+  v_state := encode(gen_random_bytes(32), 'hex');
+  insert into oauth_states (state, user_id, provider) values (v_state, null, p_provider);
+  return v_state;
+end;
+$$;
+
+-- No explicit revoke needed: the ALTER DEFAULT PRIVILEGES statements
+-- above already lock new functions down to nobody by default (verified
+-- empirically, not just by reading the docs) — this grant is the only
+-- permission this function actually needs.
+grant execute on function create_oauth_login_state(text) to anon;
+
+-- One Strava athlete can only ever map to one Supabase user — enforced at
+-- the database level, not just by application logic, now that the
+-- duplicate test-user rows are cleaned up.
+create unique index connections_provider_athlete_unique on connections(provider, provider_athlete_id);
+
+-- Invite-only sign-in: only athlete ids in this table can create an
+-- account via "Continue with Strava". Checked server-side (service_role)
+-- in strava-callback; no client access needed, so same zero-policy
+-- lockdown as connections/oauth_states.
+create table allowed_athletes (
+  provider_athlete_id text primary key,
+  added_at timestamptz not null default now()
+);
+
+alter table allowed_athletes enable row level security;
+
+insert into allowed_athletes (provider_athlete_id) values ('174546304');
 
 -- ---------------------------------------------------------------------
 -- Synced activity data. Unlike `connections`, this is not sensitive —
