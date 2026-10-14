@@ -332,20 +332,20 @@ grant execute on function create_oauth_login_state(text) to anon;
 -- One Strava athlete can only ever map to one Supabase user — enforced at
 -- the database level, not just by application logic, now that the
 -- duplicate test-user rows are cleaned up.
-create unique index connections_provider_athlete_unique on connections(provider, provider_athlete_id);
+create unique index if not exists connections_provider_athlete_unique on connections(provider, provider_athlete_id);
 
 -- Invite-only sign-in: only athlete ids in this table can create an
 -- account via "Continue with Strava". Checked server-side (service_role)
 -- in strava-callback; no client access needed, so same zero-policy
 -- lockdown as connections/oauth_states.
-create table allowed_athletes (
+create table if not exists allowed_athletes (
   provider_athlete_id text primary key,
   added_at timestamptz not null default now()
 );
 
 alter table allowed_athletes enable row level security;
 
-insert into allowed_athletes (provider_athlete_id) values ('174546304');
+insert into allowed_athletes (provider_athlete_id) values ('174546304') on conflict (provider_athlete_id) do nothing;
 
 -- ---------------------------------------------------------------------
 -- Synced activity data. Unlike `connections`, this is not sensitive —
@@ -381,6 +381,46 @@ create index if not exists activities_user_date_idx on activities (user_id, date
 
 alter table activities enable row level security;
 
+drop policy if exists "users can view own activities" on activities;
 create policy "users can view own activities"
   on activities for select
   using (auth.uid() = user_id);
+
+-- One-time onboarding profile. A user with no row here is sent to
+-- onboarding.html after sign-in; once this row exists, they go straight to
+-- the dashboard. No delete policy at all — RLS default-denies delete from
+-- the client regardless of auth.uid(), same pattern as connections/activities.
+create table if not exists profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  age integer,
+  sex text check (sex in ('male', 'female', 'prefer_not_to_say')),
+  height_cm numeric,
+  weight_kg numeric,
+  goal text not null check (goal in (
+    'sprint_triathlon', 'olympic_triathlon', '70.3', 'ironman',
+    'marathon', 'half_marathon', 'get_fitter', 'other'
+  )),
+  goal_other text,
+  target_race_date date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table profiles enable row level security;
+
+drop policy if exists "users can view own profile" on profiles;
+create policy "users can view own profile"
+  on profiles for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "users can insert own profile" on profiles;
+create policy "users can insert own profile"
+  on profiles for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "users can update own profile" on profiles;
+create policy "users can update own profile"
+  on profiles for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

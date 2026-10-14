@@ -247,6 +247,7 @@
   </div>
   <a class="nav-link" href="index.html">&larr; Stats Dashboard</a>
   <a class="nav-link" href="coach.html">Coach &rarr;</a>
+  <a class="nav-link" href="onboarding.html">Edit profile</a>
 </header>
 
 <main>
@@ -1138,6 +1139,17 @@ function autoExpandCurrentPhase(){
     accordions[idx].querySelector('.phase-body').classList.add('open');
   }
 }
+const GOAL_LABELS = {
+  sprint_triathlon: "Sprint Triathlon", olympic_triathlon: "Olympic Triathlon",
+  "70.3": "70.3", ironman: "Ironman", marathon: "Marathon",
+  half_marathon: "Half Marathon", get_fitter: "Get Fitter",
+};
+function renderProfileHeader(profile){
+  if(!profile) return;
+  const goalLabel = profile.goal === 'other' ? profile.goal_other : GOAL_LABELS[profile.goal];
+  const h1 = document.querySelector('header h1');
+  if(h1) h1.textContent = `${profile.display_name}'s ${goalLabel} Training`;
+}
 async function init(){
   const { data: { user } } = await sb.auth.getUser();
   if(!user){
@@ -1145,6 +1157,14 @@ async function init(){
     return;
   }
   currentUser = user;
+
+  const { data: profile, error: profileErr } = await sb.from('profiles').select('*').maybeSingle();
+  if(profileErr) console.error('profile lookup failed', profileErr);
+  if(!profile){
+    location.href = 'onboarding.html';
+    return;
+  }
+  renderProfileHeader(profile);
 
   // Daily sync without cron: if Strava hasn't synced in >6h (or never),
   // sync now before loading, so the data shown is current.

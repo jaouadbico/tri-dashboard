@@ -57,11 +57,23 @@ function redirectTo(status: "connected" | "error", extra?: Record<string, string
   return Response.redirect(url.toString(), 302);
 }
 
-// Login success only: tokens travel in the fragment, never the query
+// Login success only: tokens (and, for first-time sign-ins, the athlete's
+// name for onboarding prefill) travel in the fragment, never the query
 // string — never sent to, or logged by, any server.
-function redirectWithSession(accessToken: string, refreshToken: string) {
+function redirectWithSession(
+  accessToken: string,
+  refreshToken: string,
+  firstName: string,
+  lastName: string,
+) {
   const url = new URL(APP_REDIRECT_URL);
-  url.hash = `access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+  const parts = [
+    `access_token=${encodeURIComponent(accessToken)}`,
+    `refresh_token=${encodeURIComponent(refreshToken)}`,
+  ];
+  if (firstName) parts.push(`strava_first_name=${encodeURIComponent(firstName)}`);
+  if (lastName) parts.push(`strava_last_name=${encodeURIComponent(lastName)}`);
+  url.hash = parts.join("&");
   return Response.redirect(url.toString(), 302);
 }
 
@@ -104,7 +116,7 @@ Deno.serve(async (req: Request) => {
     access_token: string;
     refresh_token: string;
     expires_at: number;
-    athlete?: { id?: number };
+    athlete?: { id?: number; firstname?: string; lastname?: string };
   };
   try {
     const tokenResp = await fetch("https://www.strava.com/oauth/token", {
@@ -242,5 +254,17 @@ Deno.serve(async (req: Request) => {
     return redirectTo("error", { reason: "session_mint_failed" });
   }
 
-  return redirectWithSession(otpData.session.access_token, otpData.session.refresh_token);
+  // First/last name travel in the fragment alongside the session tokens,
+  // same reasoning as the tokens themselves — never a query string, never
+  // logged or sent to any server. Used once by onboarding.html to prefill
+  // the display name; nothing new is stored server-side for this.
+  const firstName = tokenData.athlete?.firstname ?? "";
+  const lastName = tokenData.athlete?.lastname ?? "";
+
+  return redirectWithSession(
+    otpData.session.access_token,
+    otpData.session.refresh_token,
+    firstName,
+    lastName,
+  );
 });

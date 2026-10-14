@@ -139,6 +139,8 @@ async function handleLoginRedirect() {
   const params = new URLSearchParams(location.hash.slice(1));
   const access_token = params.get("access_token");
   const refresh_token = params.get("refresh_token");
+  const firstName = params.get("strava_first_name") || "";
+  const lastName = params.get("strava_last_name") || "";
   history.replaceState(null, "", location.pathname + location.search);
   if (!access_token || !refresh_token) return false;
   const { error } = await sb.auth.setSession({ access_token, refresh_token });
@@ -146,6 +148,15 @@ async function handleLoginRedirect() {
     console.error("setSession failed", error);
     showBanner("err", "Sign-in failed — try Continue with Strava again.");
     return false;
+  }
+  // Carried via sessionStorage (not a query string) across the hop to
+  // index.html/onboarding.html — just a first/last name, but no reason to
+  // put it in a URL either.
+  try {
+    if (firstName) sessionStorage.setItem("strava_prefill_first_name", firstName);
+    if (lastName) sessionStorage.setItem("strava_prefill_last_name", lastName);
+  } catch (e) {
+    // sessionStorage unavailable — onboarding just won't prefill the name
   }
   showBanner("ok", "Signed in with Strava.");
   return true;
@@ -266,8 +277,32 @@ el("stravaLoginBtn").addEventListener("click", async () => {
   location.href = authorizeUrl.toString();
 });
 
-sb.auth.onAuthStateChange(() => refreshUI());
-handleLoginRedirect().then(() => refreshUI());
+// After a FRESH sign-in (not just loading this page with an existing
+// session), send the user on to the dashboard — index.html's own init()
+// decides from there whether to bounce to onboarding.html first. This is
+// the only place that auto-navigates away; visiting connect.html directly
+// while already signed in just shows the manage-connections cards below.
+let justSignedIn = false;
+sb.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_IN" && justSignedIn) {
+    location.href = "index.html";
+    return;
+  }
+  refreshUI();
+});
+
+handleLoginRedirect().then((loggedIn) => {
+  if (loggedIn) {
+    location.href = "index.html";
+    return;
+  }
+  refreshUI();
+});
+
+// Magic-link sign-ins complete via Supabase's own redirect handling, which
+// fires a SIGNED_IN event asynchronously after this script has already run
+// once — flag it so that (and only that) event forwards to the dashboard.
+justSignedIn = true;
 </script>
 </body>
 </html>

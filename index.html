@@ -206,6 +206,7 @@
     <button class="ghost" id="saveRaceDate">Set</button>
     <a href="plan.html" class="ghost" style="text-decoration:none;display:inline-block;">Program &rarr;</a>
     <a href="coach.html" class="ghost" style="text-decoration:none;display:inline-block;">Coach &rarr;</a>
+    <a href="onboarding.html" class="ghost" style="text-decoration:none;display:inline-block;">Edit profile</a>
   </div>
 </header>
 
@@ -1583,6 +1584,17 @@ function renderAll(){
   renderLoadChart();
   renderStrength();
 }
+const GOAL_LABELS = {
+  sprint_triathlon: "Sprint Triathlon", olympic_triathlon: "Olympic Triathlon",
+  "70.3": "70.3", ironman: "Ironman", marathon: "Marathon",
+  half_marathon: "Half Marathon", get_fitter: "Get Fitter",
+};
+function renderProfileHeader(profile){
+  if(!profile) return;
+  const goalLabel = profile.goal === 'other' ? profile.goal_other : GOAL_LABELS[profile.goal];
+  const h1 = document.querySelector('header h1');
+  if(h1) h1.textContent = `${profile.display_name}'s ${goalLabel} Training`;
+}
 async function init(){
   const { data: { user } } = await sb.auth.getUser();
   if(!user){
@@ -1590,6 +1602,15 @@ async function init(){
     return;
   }
   currentUser = user;
+
+  const { data: profile, error: profileErr } = await sb.from('profiles').select('*').maybeSingle();
+  if(profileErr) console.error('profile lookup failed', profileErr);
+  if(!profile){
+    location.href = 'onboarding.html';
+    return;
+  }
+  renderProfileHeader(profile);
+
   const isOwner = user.id === OWNER_USER_ID;
 
   // WHOOP/Garmin wellness data has no per-user Supabase sync yet — it's
