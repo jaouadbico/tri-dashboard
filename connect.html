@@ -264,7 +264,7 @@ el("sendLinkBtn").addEventListener("click", async () => {
   // network error doesn't get mislabeled as that.
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: location.href, shouldCreateUser: false },
+    options: { emailRedirectTo: "https://jaouadbico.github.io/tri-dashboard/connect.html", shouldCreateUser: false },
   });
   if (!error) {
     el("authStatus").textContent = "Check your email for the sign-in link.";

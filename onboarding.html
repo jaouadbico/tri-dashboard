@@ -388,7 +388,10 @@ el("onboardingForm").addEventListener("submit", async (e) => {
   // pointless reconfirmation email every time the form is re-saved.
   let emailPending = false;
   if (values.email.toLowerCase() !== (user.email || "").toLowerCase()) {
-    const { error: emailErr } = await sb.auth.updateUser({ email: values.email });
+    const { error: emailErr } = await sb.auth.updateUser(
+      { email: values.email },
+      { emailRedirectTo: "https://jaouadbico.github.io/tri-dashboard/connect.html" }
+    );
     if (emailErr) {
       console.error("email update failed", emailErr);
       showBanner("err", `Couldn't update your email: ${emailErr.message}`);
