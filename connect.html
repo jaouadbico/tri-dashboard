@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Connect Your Accounts</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth-common.js"></script>
 <style>
   :root{
     --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
@@ -123,6 +124,8 @@ function showBanner(kind, text) {
     const reason = params.get("reason") || "unknown_error";
     if (reason === "not_invited") {
       showBanner("err", "This app is invite-only right now — your Strava account isn't on the list.");
+    } else if (reason === "athlete_already_linked") {
+      showBanner("err", "That Strava account is already linked to a different account here. Sign in with that account instead, or disconnect it there first.");
     } else {
       showBanner("err", `Couldn't connect ${provider} (${reason}). Try again.`);
     }
@@ -183,7 +186,11 @@ async function refreshUI() {
     return;
   }
   const strava = (connections || []).find((c) => c.provider === "strava");
-  if (strava) {
+  if (strava && strava.needs_reconnect) {
+    el("stravaStatus").innerHTML = `<span style="color:var(--red);font-weight:700;">Needs reconnect</span> — last synced ${strava.last_synced_at ? new Date(strava.last_synced_at).toLocaleString() : "never yet"}`;
+    el("stravaBtn").textContent = "Reconnect";
+    el("stravaSyncBtn").hidden = true;
+  } else if (strava) {
     el("stravaStatus").innerHTML = `<span class="connected-badge">Connected</span> — last synced ${strava.last_synced_at ? new Date(strava.last_synced_at).toLocaleString() : "never yet"}`;
     el("stravaBtn").textContent = "Reconnect";
     el("stravaSyncBtn").hidden = false;
@@ -191,6 +198,29 @@ async function refreshUI() {
     el("stravaStatus").textContent = "Not connected";
     el("stravaBtn").textContent = "Connect Strava";
     el("stravaSyncBtn").hidden = true;
+  }
+}
+
+// Called after any FRESH sign-in (not a plain page load with an existing
+// session — that just shows the manage-connections cards above via
+// refreshUI()). Strava connected and healthy -> straight to the dashboard
+// (index.html decides from there whether to bounce to onboarding.html).
+// Not connected, or needs reconnect -> stay here, make it obvious why.
+async function checkConnectionAndRoute() {
+  const { data: connections, error } = await sb.rpc("get_my_connections");
+  if (error) {
+    console.error("get_my_connections failed", error);
+    refreshUI();
+    return;
+  }
+  const strava = (connections || []).find((c) => c.provider === "strava");
+  await refreshUI();
+  if (strava && !strava.needs_reconnect) {
+    location.href = "index.html";
+  } else if (strava && strava.needs_reconnect) {
+    showBanner("err", "Your Strava connection needs to be reconnected.");
+  } else {
+    showBanner("ok", "Signed in. Connect Strava to start syncing your training data.");
   }
 }
 
@@ -226,17 +256,26 @@ el("sendLinkBtn").addEventListener("click", async () => {
   const email = el("emailInput").value.trim();
   if (!email) return;
   el("authStatus").textContent = "Sending...";
+  // shouldCreateUser: false — magic link is existing-accounts-only here;
+  // new sign-ups only happen via "Continue with Strava" (invite-only). When
+  // there's no account, GoTrue's real error is specifically code
+  // "otp_disabled" ("Signups not allowed for otp") — checked explicitly
+  // rather than treating every error as "no account", so a rate limit or
+  // network error doesn't get mislabeled as that.
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: location.href },
+    options: { emailRedirectTo: location.href, shouldCreateUser: false },
   });
-  el("authStatus").textContent = error ? `Error: ${error.message}` : "Check your email for the sign-in link.";
+  if (!error) {
+    el("authStatus").textContent = "Check your email for the sign-in link.";
+  } else if (error.code === "otp_disabled") {
+    el("authStatus").textContent = "No account for that email. New here? Use Continue with Strava.";
+  } else {
+    el("authStatus").textContent = "Couldn't send the link — try again.";
+  }
 });
 
-el("signOutBtn").addEventListener("click", async () => {
-  await sb.auth.signOut();
-  refreshUI();
-});
+el("signOutBtn").addEventListener("click", () => signOutEverywhere(sb));
 
 el("stravaBtn").addEventListener("click", async () => {
   el("stravaBtn").disabled = true;
@@ -278,14 +317,14 @@ el("stravaLoginBtn").addEventListener("click", async () => {
 });
 
 // After a FRESH sign-in (not just loading this page with an existing
-// session), send the user on to the dashboard — index.html's own init()
-// decides from there whether to bounce to onboarding.html first. This is
-// the only place that auto-navigates away; visiting connect.html directly
-// while already signed in just shows the manage-connections cards below.
+// session), check the Strava connection and route accordingly — see
+// checkConnectionAndRoute() above. This is the only place that
+// auto-navigates away; visiting connect.html directly while already signed
+// in just shows the manage-connections cards below.
 let justSignedIn = false;
 sb.auth.onAuthStateChange((event) => {
   if (event === "SIGNED_IN" && justSignedIn) {
-    location.href = "index.html";
+    checkConnectionAndRoute();
     return;
   }
   refreshUI();
@@ -293,7 +332,7 @@ sb.auth.onAuthStateChange((event) => {
 
 handleLoginRedirect().then((loggedIn) => {
   if (loggedIn) {
-    location.href = "index.html";
+    checkConnectionAndRoute();
     return;
   }
   refreshUI();

@@ -53,6 +53,19 @@ function json(body: unknown, status = 200): Response {
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+// Flips the persisted flag connect.html reads via get_my_connections() so
+// the UI can say "needs reconnect" without the caller having to run a sync
+// first. Best-effort: a failure here just means the UI won't show the flag
+// yet, not that the reconnect_needed response itself is lost.
+async function markNeedsReconnect(userId: string): Promise<void> {
+  const { error } = await admin
+    .from("connections")
+    .update({ needs_reconnect: true })
+    .eq("user_id", userId)
+    .eq("provider", "strava");
+  if (error) console.error("markNeedsReconnect failed:", error);
+}
+
 type RefreshResult =
   | { ok: true; accessToken: string; refreshToken: string; expiresAt: number }
   | { ok: false; status: number };
@@ -159,6 +172,7 @@ Deno.serve(async (req: Request) => {
     if (!tokenRow.refresh_token) {
       // Expired and nothing to refresh with — only a full reconnect fixes
       // this. Do not touch last_synced_at: nothing was synced.
+      await markNeedsReconnect(userId);
       return json({ status: "reconnect_needed", reason: "no_refresh_token" });
     }
 
@@ -169,6 +183,7 @@ Deno.serve(async (req: Request) => {
         // dead; only a fresh OAuth consent (full reconnect) can fix it.
         // Explicitly NOT touching last_synced_at: nothing was synced, and
         // updating it would hide that this connection is broken.
+        await markNeedsReconnect(userId);
         return json({ status: "reconnect_needed", reason: "refresh_rejected" });
       }
       if (refreshResult.status === 429) {
@@ -229,6 +244,7 @@ Deno.serve(async (req: Request) => {
     }
     if (!resp.ok) {
       if (resp.status === 401) {
+        await markNeedsReconnect(userId);
         return json({ status: "reconnect_needed", reason: "access_token_rejected" });
       }
       console.error("Strava activities fetch failed:", resp.status, await resp.text());
@@ -276,13 +292,12 @@ Deno.serve(async (req: Request) => {
   }
 
   // Only now, after a genuinely successful pull (even zero new activities
-  // counts as a completed sync, not a failure), do we touch last_synced_at.
-  // A mid-pagination rate limit still counts as completed: the unique
-  // constraint on provider_activity_id makes re-fetching the same fixed
-  // window next time a harmless no-op for whatever was already saved.
+  // counts as a completed sync, not a failure), do we touch last_synced_at —
+  // and clear needs_reconnect, since a successful pull is proof the
+  // connection is healthy again even if an earlier sync had flagged it.
   const { error: touchErr } = await admin
     .from("connections")
-    .update({ last_synced_at: new Date().toISOString() })
+    .update({ last_synced_at: new Date().toISOString(), needs_reconnect: false })
     .eq("user_id", userId)
     .eq("provider", "strava");
   if (touchErr) {

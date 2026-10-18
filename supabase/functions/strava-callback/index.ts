@@ -141,7 +141,7 @@ Deno.serve(async (req: Request) => {
 
   const athleteId = tokenData.athlete?.id != null ? String(tokenData.athlete.id) : null;
 
-  // --- CONNECT mode: unchanged from before ---
+  // --- CONNECT mode ---
   if (!isLogin) {
     const { error: upsertErr } = await admin.rpc("upsert_connection", {
       p_user_id: stateRow.user_id,
@@ -154,6 +154,14 @@ Deno.serve(async (req: Request) => {
     });
     if (upsertErr) {
       console.error("upsert_connection failed:", upsertErr);
+      // 23505 = unique_violation on connections(provider, provider_athlete_id)
+      // — this Strava athlete is already linked to a DIFFERENT Supabase user
+      // (upsert_connection only looks up by user_id+provider, so it can't
+      // detect this itself before inserting). A clear, specific reason
+      // instead of the generic one.
+      if (upsertErr.code === "23505") {
+        return redirectTo("error", { reason: "athlete_already_linked" });
+      }
       return redirectTo("error", { reason: "storage_failed" });
     }
     return redirectTo("connected");

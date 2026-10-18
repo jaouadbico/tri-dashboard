@@ -48,8 +48,18 @@ create table if not exists connections (
   provider_athlete_id text,
   connected_at timestamptz not null default now(),
   last_synced_at timestamptz,
+  -- Set by strava-sync when a refresh/access-token attempt is rejected by
+  -- the provider — only a fresh OAuth consent (reconnect) fixes it. Cleared
+  -- by upsert_connection on any successful connect/token-rotation, and by
+  -- strava-sync on any successful pull.
+  needs_reconnect boolean not null default false,
   unique (user_id, provider)
 );
+
+-- For a database where `connections` already existed before needs_reconnect
+-- was added above — create table if not exists is a no-op there, so the
+-- column has to be added explicitly for anyone upgrading in place.
+alter table connections add column if not exists needs_reconnect boolean not null default false;
 
 alter table connections enable row level security;
 
@@ -99,13 +109,17 @@ create trigger connections_cleanup_secrets
 
 -- Safe, read-only status the Connect page IS allowed to see: which
 -- providers are connected and when — never the tokens themselves.
+-- Postgres refuses `create or replace` across a return-type change (it
+-- errors with "cannot change return type of existing function"), so an
+-- upgrade from the earlier 3-column version needs an explicit drop first.
+drop function if exists get_my_connections();
 create or replace function get_my_connections()
-returns table (provider text, connected_at timestamptz, last_synced_at timestamptz)
+returns table (provider text, connected_at timestamptz, last_synced_at timestamptz, needs_reconnect boolean)
 language sql
 security definer
 set search_path = public
 as $$
-  select provider, connected_at, last_synced_at
+  select provider, connected_at, last_synced_at, needs_reconnect
   from connections
   where user_id = auth.uid();
 $$;
@@ -200,7 +214,10 @@ begin
       refresh_token_id = v_refresh_id,
       expires_at = p_expires_at,
       scope = coalesce(p_scope, existing.scope),
-      provider_athlete_id = coalesce(p_provider_athlete_id, existing.provider_athlete_id)
+      provider_athlete_id = coalesce(p_provider_athlete_id, existing.provider_athlete_id),
+      -- A successful connect or token rotation is itself proof the
+      -- credentials work again — clear any earlier reconnect flag.
+      needs_reconnect = false
     where id = existing.id;
   else
     v_access_id := vault.create_secret(p_access_token);
