@@ -285,6 +285,9 @@
 const SUPABASE_URL = "https://rafovizzmempbkoavnck.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pbvoqAM4PuVT3Gzg4IbDRw_q-6ySUSn";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// This whole page is the hardcoded 44-week training plan — owner-only,
+// same id as index.html's OWNER_USER_ID.
+const OWNER_USER_ID = "950fb565-e135-4096-8190-f160da01b99c";
 let currentUser = null;
 
 /* ---------------- GROUNDING DATA (from your logged history) ---------------- */
@@ -1159,6 +1162,14 @@ async function init(){
     return;
   }
   currentUser = user;
+
+  // This page is the hardcoded 44-week plan — owner-only. Redirected before
+  // anything here renders, same as the dashboard hides the equivalent
+  // sections for everyone else.
+  if(user.id !== OWNER_USER_ID){
+    location.href = 'index.html';
+    return;
+  }
 
   const { data: profile, error: profileErr } = await sb.from('profiles').select('*').maybeSingle();
   if(profileErr) console.error('profile lookup failed', profileErr);

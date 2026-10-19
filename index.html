@@ -196,7 +196,7 @@
     <span class="mark"></span>
     <div>
       <h1>Jaouad's 70.3 Instrumentation</h1>
-      <div class="sub">Half Ironman Build &mdash; Aug 2026 → Race Day</div>
+      <div class="sub" id="headerSub">Half Ironman Build &mdash; Aug 2026 → Race Day</div>
     </div>
   </div>
   <div class="race-set">
@@ -205,8 +205,8 @@
     <span class="race-set-label">RACE DATE</span>
     <input type="date" id="raceDateInput">
     <button class="ghost" id="saveRaceDate">Set</button>
-    <a href="plan.html" class="ghost" style="text-decoration:none;display:inline-block;">Program &rarr;</a>
-    <a href="coach.html" class="ghost" style="text-decoration:none;display:inline-block;">Coach &rarr;</a>
+    <a href="plan.html" class="ghost" id="programNavLink" style="text-decoration:none;display:inline-block;">Program &rarr;</a>
+    <a href="coach.html" class="ghost" id="coachNavLink" style="text-decoration:none;display:inline-block;">Coach &rarr;</a>
     <a href="onboarding.html" class="ghost" style="text-decoration:none;display:inline-block;">Edit profile</a>
     <a id="signOutBtn" class="ghost" style="text-decoration:none;display:inline-block;cursor:pointer;">Sign out</a>
   </div>
@@ -214,7 +214,7 @@
 
 <main>
 
-  <a href="plan.html" style="text-decoration:none;display:block;margin-bottom:16px;">
+  <a href="plan.html" id="todaysProgramCard" style="text-decoration:none;display:block;margin-bottom:16px;">
     <div class="panel" style="display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg, rgba(232,17,45,0.18), var(--panel));border-color:var(--cyan);cursor:pointer;">
       <div>
         <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:0.02em;color:var(--text);">Today's Training Program</div>
@@ -226,7 +226,7 @@
 
   <div class="cluster" id="gaugeCluster"></div>
 
-  <div class="panel">
+  <div class="panel" id="phaseTimelinePanel">
     <h2>Phase Timeline</h2>
     <div class="timeline" id="timeline"></div>
   </div>
@@ -380,7 +380,7 @@
 
     </div>
 
-    <div class="panel">
+    <div class="panel" id="milestonesPanel">
       <h2>Milestones</h2>
       <div id="milestoneList"></div>
     </div>
@@ -396,12 +396,15 @@ const SUPABASE_URL = "https://rafovizzmempbkoavnck.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pbvoqAM4PuVT3Gzg4IbDRw_q-6ySUSn";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Only this user id sees the WHOOP/Garmin wellness panels and has those
-// static JSON files fetched at all. Find yours: sign in at connect.html,
-// open the browser console, run `(await sb.auth.getUser()).data.user.id`.
+// Only this user id sees the WHOOP/Garmin wellness panels, the hardcoded
+// 44-week training plan (phase timeline, milestones, program card/link),
+// and has WHOOP/Garmin static JSON files fetched at all. Find yours: sign
+// in at connect.html, open the browser console, run
+// `(await sb.auth.getUser()).data.user.id`.
 const OWNER_USER_ID = "950fb565-e135-4096-8190-f160da01b99c";
 
 let currentUser = null;
+let isOwner = false;
 
 /* ---------------- PLAN DEFINITION ---------------- */
 const PHASE_DEFS = [
@@ -738,14 +741,7 @@ function gaugeSVG(value, max, zones, needleColor){
 }
 
 function renderGauges(){
-  const phases = computePhases(raceDate);
   const today = new Date(); today.setHours(0,0,0,0);
-  const race = new Date(raceDate+'T00:00:00');
-  const planStart = phases[0].start;
-  const totalDays = daysBetween(planStart, phases[phases.length-1].end);
-  const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(planStart, today)));
-  const planPct = totalDays>0 ? (elapsedDays/totalDays*100) : 0;
-  const daysToRace = daysBetween(today, race);
 
   // weekly compliance: sessions logged in last 7 days vs target (assume 4/week target)
   const weekAgo = new Date(today.getTime()-7*86400000);
@@ -757,6 +753,27 @@ function renderGauges(){
   const compliancePct = Math.min(100, (thisWeekCount/targetPerWeek)*100);
 
   const cluster = document.getElementById('gaugeCluster');
+  const sessionsGauge = `
+    <div class="gauge-card">
+      <div class="ring-wrap">${ringSVG(compliancePct, recoveryColor(compliancePct), 130)}<div class="ring-value-abs gvalue mono">${thisWeekCount}/${targetPerWeek}</div></div>
+      <div class="glabel">This Week's Sessions</div>
+      <div class="gsub">${compliancePct.toFixed(0)}% of target</div>
+    </div>`;
+
+  // Days to Race / Plan Progress are tied to the hardcoded 44-week plan —
+  // owner-only, same as the phase timeline and milestones.
+  if(!isOwner){
+    cluster.innerHTML = sessionsGauge;
+    return;
+  }
+
+  const phases = computePhases(raceDate);
+  const race = new Date(raceDate+'T00:00:00');
+  const planStart = phases[0].start;
+  const totalDays = daysBetween(planStart, phases[phases.length-1].end);
+  const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(planStart, today)));
+  const planPct = totalDays>0 ? (elapsedDays/totalDays*100) : 0;
+  const daysToRace = daysBetween(today, race);
   const daysPct = Math.max(0, Math.min(100, 100 - (Math.max(0,daysToRace)/300*100)));
   cluster.innerHTML = `
     <div class="gauge-card">
@@ -769,11 +786,7 @@ function renderGauges(){
       <div class="glabel">Plan Progress</div>
       <div class="gsub">${phases.find(p=>today>=p.start&&today<=p.end)?.name || (today<planStart?'Not started':'Complete')}</div>
     </div>
-    <div class="gauge-card">
-      <div class="ring-wrap">${ringSVG(compliancePct, recoveryColor(compliancePct), 130)}<div class="ring-value-abs gvalue mono">${thisWeekCount}/${targetPerWeek}</div></div>
-      <div class="glabel">This Week's Sessions</div>
-      <div class="gsub">${compliancePct.toFixed(0)}% of target</div>
-    </div>
+    ${sessionsGauge}
   `;
 }
 
@@ -1570,8 +1583,10 @@ function renderSyncStatus(){
 function renderAll(){
   renderSyncStatus();
   renderGauges();
-  renderTimeline();
-  renderMilestones();
+  if(isOwner){
+    renderTimeline();
+    renderMilestones();
+  }
   renderVolumeChart();
   renderPaceChart();
   renderDistanceChart();
@@ -1613,13 +1628,26 @@ async function init(){
   }
   renderProfileHeader(profile);
 
-  const isOwner = user.id === OWNER_USER_ID;
+  isOwner = user.id === OWNER_USER_ID;
 
   // WHOOP/Garmin wellness data has no per-user Supabase sync yet — it's
   // owner-only static files. Never fetched (not just hidden) for anyone else.
+  // The hardcoded 44-week training plan (phase timeline, milestones,
+  // program card, subtitle, and the Program/Coach nav links) is the same
+  // kind of owner-only content — hidden here, and renderAll() below skips
+  // rendering it at all for non-owners.
   if(!isOwner){
     document.getElementById('whoopPanel').hidden = true;
     document.getElementById('garminPanel').hidden = true;
+    document.getElementById('headerSub').hidden = true;
+    document.getElementById('phaseTimelinePanel').hidden = true;
+    document.getElementById('milestonesPanel').hidden = true;
+    // These three have an inline display:... style, which beats the
+    // [hidden] attribute's CSS rule on specificity — .hidden alone would
+    // be a silent no-op, so set the same property it's already fighting.
+    document.getElementById('todaysProgramCard').style.display = 'none';
+    document.getElementById('programNavLink').style.display = 'none';
+    document.getElementById('coachNavLink').style.display = 'none';
   }
 
   // Daily sync without cron: if Strava hasn't synced in >6h (or never),

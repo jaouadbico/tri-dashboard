@@ -13,6 +13,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#0a0a0c; --panel:#141417; --panel-alt:#1c1c21; --line:#2e2e34;
@@ -100,6 +101,14 @@
 </main>
 
 <script>
+// This page reads coach.json, the owner's personal WHOOP/Strava analysis —
+// owner-only, same id as index.html/plan.html's OWNER_USER_ID. Unlike the
+// rest of the app, this page previously had no auth check at all.
+const SUPABASE_URL = "https://rafovizzmempbkoavnck.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pbvoqAM4PuVT3Gzg4IbDRw_q-6ySUSn";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const OWNER_USER_ID = "950fb565-e135-4096-8190-f160da01b99c";
+
 async function loadCoach(){
   const main = document.getElementById('mainContent');
   let data;
@@ -186,7 +195,19 @@ function render(data){
   `;
 }
 
-loadCoach();
+async function init(){
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user){
+    location.href = 'connect.html';
+    return;
+  }
+  if(user.id !== OWNER_USER_ID){
+    location.href = 'index.html';
+    return;
+  }
+  loadCoach();
+}
+init();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
