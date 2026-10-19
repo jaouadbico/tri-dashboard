@@ -1,6 +1,6 @@
 // Bump this string any time you re-upload index.html/plan.html/coach.html
 // so iOS knows to fetch fresh copies instead of serving the old cache.
-const CACHE_NAME = 'atlas703-cache-v6';
+const CACHE_NAME = 'atlas703-cache-v7';
 
 // workouts.json/whoop.json/coach.json removed: no longer published (moved
 // out of the public repo as personal data). cache.addAll() rejects the
